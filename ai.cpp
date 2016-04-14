@@ -5,8 +5,7 @@ static const int MaxScore = 1000000;
 int leafEval(Board *board, int player) {
   int out = 0;
   int other = 3-player;
-  for (int i = 0; i < 9; i++) {
-    auto c = board->macrocells[i];
+  for (auto c : board->macrocells) {
     if (c == player) {
       out ++;
     } else if (c == other) {
@@ -22,6 +21,7 @@ SearchResult SearchMove(Board *board, int player, int depth) {
   out.move = -1;
 
   if (board->isOver()) {
+    out.score -= depth;
     return out;
   }
 

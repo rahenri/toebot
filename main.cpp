@@ -33,7 +33,7 @@ vector<T> sliceVector(const vector<T>& input, int start = 0, int end = -1) {
   return out;
 }
 
-struct settings {
+struct Settings {
   int time_bank;
   int time_per_move;
   vector<string> player_names;
@@ -63,11 +63,11 @@ struct settings {
   }
 };
 
-struct game {
+struct Game {
   int round;
   int move;
 
-  settings settings;
+  Settings settings;
 
   Board board;
 
@@ -92,7 +92,7 @@ struct game {
   }
 
   SearchResult bestCell() {
-    SearchResult result =  SearchMove(&board, settings.my_id);
+    SearchResult result =  SearchMove(&board, settings.my_id, 6);
     board.tick(result.move, settings.my_id);
     return result;
   }
@@ -111,7 +111,7 @@ bool RunTests();
 
 int main() {
   string line;
-  game game;
+  Game game;
   while (getline(cin, line)) {
     vector<string> command = parseLine(line);
     if (command.size() == 0) {

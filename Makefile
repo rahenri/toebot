@@ -1,5 +1,5 @@
 all: toebot
-CXXFLAGS=-Wall -O3 --std=c++1y
+CXXFLAGS=-Wall -O3 --std=c++1y -Werror
 
 test.o: util.h test.cpp
 
