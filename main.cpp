@@ -92,7 +92,18 @@ struct game {
   }
 
   SearchResult bestCell() {
-    return SearchMove(&board, settings.my_id);
+    SearchResult result =  SearchMove(&board, settings.my_id);
+    board.tick(result.move, settings.my_id);
+    return result;
+  }
+
+  bool oponentMove(int row, int col) {
+    int cell = encodeCell(row, col);
+    if (!board.canTick(cell)) {
+      return false;
+    }
+    board.tick(cell, 3-settings.my_id);
+    return true;
   }
 };
 
@@ -115,6 +126,7 @@ int main() {
         continue;
       }
       cerr << "Move Score: " << result.score << endl;
+      cerr << game.board;
       int row, col;
       decodeCell(result.move, row, col);
       cout << "place_move " << col << " " << row << endl;
@@ -129,6 +141,23 @@ int main() {
       } else {
         cerr << "Tests failed" << endl;
       }
+    } else if (name == "move") {
+      int row = stoi(args[0]);
+      int col = stoi(args[1]);
+      if (!game.oponentMove(row, col)) {
+        cerr << "Move failed" << endl;
+        continue;
+      } else {
+        cerr << game.board;
+      }
+
+      SearchResult result = game.bestCell();
+      if (result.move == -1) {
+        cerr << "No cell available" << endl;
+        continue;
+      }
+      cerr << "Move Score: " << result.score << endl;
+      cerr << game.board;
     } else {
       cerr << "Unknown command: " << name << endl;
     }

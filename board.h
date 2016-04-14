@@ -3,11 +3,22 @@
 
 #include <string>
 
+#include "util.h"
+
 using namespace std;
 
 struct Board {
   int8_t cells[9*9];
   int8_t macrocells[9];
+
+  Board() {
+    for (int i = 0; i < 9; i++) {
+      macrocells[i] = -1;
+    }
+    for (int i = 0; i < 9*9; i++) {
+      cells[i] = 0;
+    }
+  }
 
   bool canTick(int cell) {
     int mcell = cell / 9;
@@ -66,7 +77,10 @@ struct Board {
       }
     }
   }
+
 };
+
+ostream& operator<<(ostream& stream, const Board& board);
 
 void parseBoard(Board* board, const string& repr);
 void parseMacroBoard(Board* board, const string& repr);

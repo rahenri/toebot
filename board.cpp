@@ -30,3 +30,20 @@ void parseMacroBoard(Board* board, const string& repr) {
   }
 }
 
+ostream& operator<<(ostream& stream, const Board& board) {
+  for (int i = 0; i < 9; i++) {
+    for (int j = 0; j < 9; j++) {
+      int cell = encodeCell(i, j);
+      int value = board.cells[cell];
+      if (value == 1) {
+        stream << "x";
+      } else if (value == 2) {
+        stream << "o";
+      } else {
+        stream << ".";
+      }
+    }
+    stream << endl;
+  }
+  return stream;
+}
