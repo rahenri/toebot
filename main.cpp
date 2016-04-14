@@ -3,6 +3,8 @@
 #include <vector>
 
 #include "util.h"
+#include "board.h"
+#include "ai.h"
 
 using namespace std;
 
@@ -28,24 +30,6 @@ vector<T> sliceVector(const vector<T>& input, int start = 0, int end = -1) {
   for (; start < end; start++) {
     out.push_back(input[start]);
   }
-  return out;
-}
-
-vector<string> parseCSV(const string& csv) {
-  vector<string> out;
-  string part;
-  if (csv.size() == 0) {
-    return out;
-  }
-  for (char c : csv) {
-    if (c == ',') {
-      out.push_back(part);
-      part = "";
-    } else {
-      part += c;
-    }
-  }
-  out.push_back(part);
   return out;
 }
 
@@ -83,35 +67,9 @@ struct game {
   int round;
   int move;
 
-  int board[9*9];
-  int macroboard[3*3];
+  settings settings;
 
-  void parseBoard(const string& repr) {
-    if (repr.size() != 81*2-1) {
-      cerr << "Bad board repr size:" << repr.size() << endl;
-      return;
-    }
-    for (int i = 0; i < 9; i++) {
-      for (int j = 0; j < 9; j++) {
-        int k = i*9+j;
-        board[encodeCell(i, j)] = repr[k*2] - '0';
-      }
-    }
-  }
-
-  void parseMacroBoard(const string& repr) {
-    auto parts = parseCSV(repr);
-    if (parts.size() != 9) {
-      cerr << "Bad macro board size: " << parts.size() << endl;
-      return;
-    }
-    for (int i = 0; i < 3; i++) {
-      for (int j = 0; j < 3; j++) {
-        int k = i*3+j;
-        macroboard[k] = stoi(parts[k]);
-      }
-    }
-  }
+  Board board;
 
   void update(const vector<string>& args) {
     if (args.size() != 3) {
@@ -125,42 +83,16 @@ struct game {
     } else if (name == "move") {
       move = stoi(value);
     } else if (name == "field") {
-      parseBoard(value);
+      parseBoard(&board, value);
     } else if (name == "macroboard") {
-      parseMacroBoard(value);
+      parseMacroBoard(&board, value);
     } else {
       cerr << "Unknown game variable: " << name << endl;
     }
   }
 
-  cell firstCell() {
-    macrocell forced = -1;
-    for (int i = 0; i < 9; i++) {
-      if (macroboard[i] == -1) {
-        forced = i;
-        break;
-      }
-    }
-    if (forced >= 0) {
-      int base = forced * 9;
-      for (int i = base; i < base + 9; i++) {
-        if (board[i] == 0) {
-          return i;
-        }
-      }
-    }
-    for (int i = 0; i < 9; i++) {
-      if (macroboard[i] != 0) {
-        continue;
-      }
-      int base = i * 9;
-      for (int i = base; i < base + 9; i++) {
-        if (board[i] == 0) {
-          return i;
-        }
-      }
-    }
-    return -1;
+  SearchResult bestCell() {
+    return SearchMove(&board, settings.my_id);
   }
 };
 
@@ -168,7 +100,6 @@ bool RunTests();
 
 int main() {
   string line;
-  settings settings;
   game game;
   while (getline(cin, line)) {
     vector<string> command = parseLine(line);
@@ -178,16 +109,17 @@ int main() {
     string name = command[0];
     vector<string> args = sliceVector(command, 1);
     if (name == "action") {
-      cell c = game.firstCell();
-      if (c == -1) {
+      SearchResult result = game.bestCell();
+      if (result.move == -1) {
         cerr << "No cell available" << endl;
         continue;
       }
+      cerr << "Move Score: " << result.score << endl;
       int row, col;
-      decodeCell(c, row, col);
+      decodeCell(result.move, row, col);
       cout << "place_move " << col << " " << row << endl;
     } else if (name == "settings") {
-      settings.update(args);
+      game.settings.update(args);
     } else if (name == "update") {
       game.update(args);
     } else if (name == "test") {

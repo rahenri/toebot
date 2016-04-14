@@ -1,6 +1,11 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#include <vector>
+#include <string>
+
+using namespace std;
+
 typedef int cell;
 typedef int macrocell;
 
@@ -20,5 +25,7 @@ inline void decodeCell(cell c, int& row, int& col) {
   row = mrow*3 + (offset/3);
   col = mcol*3 + (offset%3);
 }
+
+vector<string> parseCSV(const string& csv);
 
 #endif
