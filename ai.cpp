@@ -54,13 +54,13 @@ struct AI {
     }
   }
 
-  int DeepEval(const Board *board, int player, int depth, int alpha, int beta) {
+  int DeepEval(const Board *board, int player, int ply, int depth, int alpha, int beta) {
     int best_score = -MaxScore;
     this->nodes++;
     this->checkDeadline();
 
     if (board->isOver()) {
-      return -MaxScore - depth + 100;
+      return -MaxScore + ply;
     }
 
     if (board->isDrawn()) {
@@ -77,7 +77,7 @@ struct AI {
       }
       Board copy = *board;
       copy.tick(cell, player);
-      int score = -this->DeepEval(&copy, 3-player, depth-1, -beta, -alpha);
+      int score = -this->DeepEval(&copy, 3-player, ply+1, depth-1, -beta, -alpha);
       if (score > best_score) {
         best_score = score;
         alpha = max(alpha, score+1);
@@ -104,7 +104,7 @@ struct AI {
       }
       Board copy = *board;
       copy.tick(cell, player);
-      int score = -this->DeepEval(&copy, 3-player, depth-1, -MaxScore, -out.score);
+      int score = -this->DeepEval(&copy, 3-player, 1, depth-1, -MaxScore, -out.score);
       if (score > out.score || out.move == -1) {
         out.score = score;
         out.move = cell;
