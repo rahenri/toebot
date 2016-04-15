@@ -2,4 +2,5 @@
 *.o
 *.txt
 toebot
+toebot-v*
 toebot.tar.gz
