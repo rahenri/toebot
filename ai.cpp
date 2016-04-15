@@ -57,7 +57,7 @@ SearchResult DeepEval(const Board *board, int player, int depth, int alpha, int 
   return out;
 }
 
-static const int InitialDepth = 12;
+static const int InitialDepth = 10;
 
 SearchResult SearchMove(const Board *board, int player) {
   SearchResult out;
