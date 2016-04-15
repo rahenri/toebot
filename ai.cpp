@@ -7,14 +7,17 @@
 
 using namespace std::chrono;
 
+static const int DrawPenalty = 50;
+static const int BoardValue = 1000;
+
 int leafEval(const Board *board, int player) {
   int out = 0;
   int other = 3-player;
   for (auto c : board->macrocells) {
     if (c == player) {
-      out ++;
+      out += BoardValue;
     } else if (c == other) {
-      out --;
+      out -= BoardValue;
     }
   }
   return out;
@@ -63,10 +66,12 @@ int listMoves(const Board* board, int8_t* moves, int player, bool need_sorting) 
   return count;
 }
 
+
 struct AI {
   int nodes = 0;
   int time_limit = 0;
   int deadline_counter = 0;
+  int initial_player = 0;
   steady_clock::time_point deadline;
   bool has_deadline;
 
@@ -104,7 +109,7 @@ struct AI {
     }
 
     if (board->isDrawn()) {
-      return 0;
+      return player == this->initial_player ? -DrawPenalty : DrawPenalty;
     }
 
     if (depth == 0) {
@@ -130,6 +135,7 @@ struct AI {
   }
 
   SearchResult SearchMove(const Board *board, int player, int depth) {
+    this->initial_player = player;
     SearchResult out;
     out.score = -MaxScore;
     out.depth = depth;

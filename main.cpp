@@ -142,7 +142,7 @@ void handleSelfPlay() {
       cerr << "Draw" << endl;
       break;
     }
-    SearchResult result = SearchMove(&board, player, 500);
+    SearchResult result = SearchMove(&board, player, 2000);
     if (result.move == -1) {
       cerr << "No move found!" << endl;
       break;
