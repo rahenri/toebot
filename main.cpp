@@ -102,7 +102,7 @@ struct Game {
   void handleAction(const vector<string>& args) {
     int time_limit = 0;
     if (args.size() >= 2) {
-      // time_limit = max(settings.time_per_move, min(stoi(args[1]), 2000)) - 100;
+      time_limit = max(settings.time_per_move, min(stoi(args[1]), 2000)) - 100;
     }
     SearchResult result = bestCell(time_limit);
     if (result.move == -1) {

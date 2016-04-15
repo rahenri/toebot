@@ -157,7 +157,7 @@ struct AI {
     }
 
     if (alternative_count > 1) {
-      // out.move = alternatives[rand() % alternative_count];
+      out.move = alternatives[rand() % alternative_count];
     }
 
     out.nodes = nodes;
