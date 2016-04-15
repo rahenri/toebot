@@ -3,11 +3,14 @@
 
 #include "board.h"
 
+static const int MaxScore = 1000000;
+
 struct SearchResult {
   int move;
   int score;
+  int nodes;
 };
 
-SearchResult SearchMove(Board *board, int player, int depth = 2);
+SearchResult SearchMove(const Board *board, int player);
 
 #endif
