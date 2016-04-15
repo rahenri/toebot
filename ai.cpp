@@ -20,8 +20,48 @@ int leafEval(const Board *board, int player) {
   return out;
 }
 
+
 struct TimeLimitExceeded {
 };
+
+struct MoveInfo {
+  int8_t score;
+  int8_t move;
+  bool operator<(const MoveInfo& other) const {
+    return this->move > other.move;
+  }
+};
+
+void sortMoves(const Board* board, int8_t *moves, int count, int player) {
+  MoveInfo move_infos[9*9];
+  for (int i = 0; i < count; i++) {
+    int8_t cell = moves[i];
+    move_infos[i].move = cell;
+    bool done = board->wouldBeDone(cell, player);
+    move_infos[i].score = done ? 1 : 0;
+  }
+  stable_sort(move_infos, move_infos+count);
+  for (int i = 0; i < count; i++) {
+    moves[i] = move_infos[i].move;
+  }
+}
+
+// Sorting seems to make things faster on average, but it makes it
+// occasionally much slower. Leave it disabled for now until I can avoid
+// that.
+int listMoves(const Board* board, int8_t* moves, int player, bool need_sorting) {
+  int count = 0;
+  for (int cell = 0; cell < 9*9; cell++) {
+    if (!board->canTick(cell)) {
+      continue;
+    }
+    moves[count++] = cell;
+  }
+  if (need_sorting) {
+    sortMoves(board, moves, count, player);
+  }
+  return count;
+}
 
 struct AI {
   int nodes = 0;
@@ -117,7 +157,7 @@ struct AI {
     }
 
     if (alternative_count > 1) {
-      out.move = alternatives[rand() % alternative_count];
+      // out.move = alternatives[rand() % alternative_count];
     }
 
     out.nodes = nodes;
