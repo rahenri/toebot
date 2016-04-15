@@ -36,8 +36,8 @@ vector<T> sliceVector(const vector<T>& input, int start = 0, int end = -1) {
 }
 
 struct Settings {
-  int time_bank = 0;
-  int time_per_move = 0;
+  int time_bank = 10000;
+  int time_per_move = 500;
   vector<string> player_names;
   string my_name;
   int my_id = 1;
@@ -93,20 +93,24 @@ struct Game {
     }
   }
 
-  SearchResult bestCell() {
-    SearchResult result =  SearchMove(&board, settings.my_id);
+  SearchResult bestCell(int time_limit) {
+    SearchResult result =  SearchMove(&board, settings.my_id, time_limit);
     board.tick(result.move, settings.my_id);
     return result;
   }
 
-  void handleAction() {
-    SearchResult result = bestCell();
+  void handleAction(const vector<string>& args) {
+    int time_limit = 0;
+    if (args.size() >= 2) {
+      time_limit = max(settings.time_per_move, min(stoi(args[1]), 2000)) - 100;
+    }
+    SearchResult result = bestCell(time_limit);
     if (result.move == -1) {
       cerr << "No cell available" << endl;
       return;
     }
     board.tick(result.move, settings.my_id);
-    cerr << "Move Score: " << result.score << ", Nodes: " << result.nodes << endl;
+    cerr << "Move Score: " << result.score << ", Nodes: " << result.nodes << " Depth: " << result.depth << endl;
     cerr << board;
     int row, col;
     decodeCell(result.move, row, col);
@@ -138,7 +142,7 @@ void handleSelfPlay() {
       cerr << "Draw" << endl;
       break;
     }
-    SearchResult result = SearchMove(&board, player);
+    SearchResult result = SearchMove(&board, player, 500);
     if (result.move == -1) {
       cerr << "No move found!" << endl;
       break;
@@ -174,7 +178,7 @@ int main() {
     string name = command[0];
     vector<string> args = sliceVector(command, 1);
     if (name == "action") {
-      game.handleAction();
+      game.handleAction(args);
     } else if (name == "settings") {
       game.settings.update(args);
     } else if (name == "update") {
@@ -196,7 +200,7 @@ int main() {
         cerr << game.board;
       }
 
-      game.handleAction();
+      game.handleAction({"move", "2000"});
     } else if (name == "self_play") {
       handleSelfPlay();
     } else {

@@ -9,8 +9,9 @@ struct SearchResult {
   int move;
   int score;
   int nodes;
+  int depth;
 };
 
-SearchResult SearchMove(const Board *board, int player);
+SearchResult SearchMove(const Board *board, int player, int time_limit);
 
 #endif
