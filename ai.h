@@ -2,6 +2,7 @@
 #define AI_H
 
 #include "board.h"
+#include "hash.h"
 
 static const int MaxScore = 1000000;
 
@@ -12,6 +13,6 @@ struct SearchResult {
   int depth = 0;
 };
 
-SearchResult SearchMove(const Board *board, int player, int time_limit);
+SearchResult SearchMove(HashTable* table, const Board *board, int player, int time_limit);
 
 #endif

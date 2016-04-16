@@ -11,6 +11,8 @@
 using namespace std;
 using namespace std::chrono;
 
+static const int DefaultTimeLimit = 800;
+
 vector<string> parseLine(const string& line) {
   vector<string> out;
   stringstream ss(line);
@@ -94,18 +96,18 @@ struct Game {
     }
   }
 
-  SearchResult bestCell(int time_limit) {
-    SearchResult result =  SearchMove(&board, settings.my_id, time_limit);
+  SearchResult bestCell(HashTable* table, int time_limit) {
+    SearchResult result = SearchMove(table, &board, settings.my_id, time_limit);
     board.tick(result.move, settings.my_id);
     return result;
   }
 
-  void handleAction(const vector<string>& args) {
-    int time_limit = 0;
+  void handleAction(HashTable* table, const vector<string>& args) {
+    int time_limit = DefaultTimeLimit;
     if (args.size() >= 2) {
-      time_limit = max(settings.time_per_move, min(stoi(args[1]), 2000)) - 100;
+      time_limit = max(settings.time_per_move, min(stoi(args[1]) - 50, DefaultTimeLimit));
     }
-    SearchResult result = bestCell(time_limit);
+    SearchResult result = bestCell(table, time_limit);
     if (result.move == -1) {
       cerr << "No cell available" << endl;
       return;
@@ -130,7 +132,7 @@ struct Game {
 
 bool RunTests();
 
-void handleSelfPlay() {
+void handleSelfPlay(HashTable* table) {
   Board board;
   int player = 1;
   int rounds = 0;
@@ -143,7 +145,7 @@ void handleSelfPlay() {
       cerr << "Draw" << endl;
       break;
     }
-    SearchResult result = SearchMove(&board, player, 2000);
+    SearchResult result = SearchMove(table, &board, player, DefaultTimeLimit);
     if (result.move == -1) {
       cerr << "No move found!" << endl;
       break;
@@ -172,6 +174,10 @@ int main() {
 
   string line;
   Game game;
+  InitHashConstants();
+
+  HashTable table(50000017);
+
   while (getline(cin, line)) {
     steady_clock::time_point t1 = steady_clock::now();
     vector<string> command = parseLine(line);
@@ -181,7 +187,7 @@ int main() {
     string name = command[0];
     vector<string> args = sliceVector(command, 1);
     if (name == "action") {
-      game.handleAction(args);
+      game.handleAction(&table, args);
     } else if (name == "settings") {
       game.settings.update(args);
     } else if (name == "update") {
@@ -203,9 +209,9 @@ int main() {
         cerr << game.board;
       }
 
-      game.handleAction({"move", "2000"});
+      game.handleAction(&table, {"move", "2000"});
     } else if (name == "self_play") {
-      handleSelfPlay();
+      handleSelfPlay(&table);
     } else {
       cerr << "Unknown command: " << name << endl;
     }

@@ -4,7 +4,7 @@
 
 #include "ai.h"
 #include "random.h"
-
+#include "hash.h"
 
 using namespace std::chrono;
 
@@ -75,8 +75,9 @@ struct AI {
   int initial_player = 0;
   steady_clock::time_point deadline;
   bool has_deadline;
+  HashTable* table;
 
-  AI(int time_limit) {
+  AI(HashTable* table, int time_limit) : table(table) {
     if (time_limit == 0) {
       this->has_deadline = false;
     } else {
@@ -110,14 +111,34 @@ struct AI {
     }
 
     if (board->isDrawn()) {
-      return player == this->initial_player ? -DrawPenalty : DrawPenalty;
+      return -DrawPenalty;
     }
 
     if (depth == 0) {
       return leafEval(board, player);
     }
 
-    for (int cell = 0; cell < 9*9; cell++) {
+    int first_cell = 0;
+    auto memo = this->table->Get(board);
+    if (memo != nullptr) {
+      if (memo->depth >= depth) {
+        if (memo->lower_bound == memo->upper_bound) {
+          return memo->lower_bound;
+        }
+        if (memo->lower_bound > beta) {
+          return memo->lower_bound;
+        }
+        if (memo->upper_bound < alpha) {
+          return memo->upper_bound;
+        }
+      }
+      first_cell = memo->move;
+    }
+
+    int best_move = -1;
+    for (int i = 0; i < 9*9; i++) {
+      int cell = (i == 0) ? first_cell : ((i == first_cell) ? 0 : i);
+
       if (!board->canTick(cell)) {
         continue;
       }
@@ -127,11 +148,22 @@ struct AI {
       if (score > best_score) {
         best_score = score;
         alpha = max(alpha, score+1);
+        best_move = cell;
         if (score > beta) {
           break;
         }
       }
     }
+    int lower_bound = -MaxScore;
+    int upper_bound = MaxScore;
+    if (best_score > beta) {
+      lower_bound = beta+1;
+    } else if (best_score < alpha) {
+      upper_bound = alpha-1;
+    } else {
+      lower_bound = upper_bound = best_score;
+    }
+    this->table->Insert(board, lower_bound, upper_bound, depth, best_move);
     return best_score;
   }
 
@@ -147,7 +179,14 @@ struct AI {
     int alternatives[9*9];
     int alternative_count = 0;
 
-    for (int cell = 0; cell < 9*9; cell++) {
+    int first_cell = 0;
+    auto memo = this->table->Get(board);
+    if (memo != nullptr) {
+      first_cell = memo->move;
+    }
+
+    for (int i = 0; i < 9*9; i++) {
+      int cell = (i == 0) ? first_cell : ((i == first_cell) ? 0 : i);
       if (!board->canTick(cell)) {
         continue;
       }
@@ -165,12 +204,14 @@ struct AI {
       }
     }
 
+    // To make it play deterministically.
+    // if (alternative_count > 0) {
+    //   out.move = *min_element(alternatives, alternatives+alternative_count);
+    // }
+
+    // To make it play non-deterministically.
     if (alternative_count > 1) {
       out.move = alternatives[RandN(alternative_count)];
-    }
-
-    if (out.move >= 9*9) {
-      cerr << "What?" << endl;
     }
 
     out.nodes = nodes;
@@ -179,10 +220,11 @@ struct AI {
   }
 };
 
-static const int MaxDepth = 10;
+// static const int MaxDepth = 10;
+static const int MaxDepth = 50;
 
-SearchResult SearchMove(const Board *board, int player, int time_limit) {
-  AI ai(time_limit);
+SearchResult SearchMove(HashTable* table, const Board *board, int player, int time_limit) {
+  AI ai(table, time_limit);
   SearchResult out;
   for (int depth = 2; depth <= MaxDepth; depth += 2) {
     SearchResult tmp;
