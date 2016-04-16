@@ -10,6 +10,7 @@ using namespace std::chrono;
 
 static const int DrawPenalty = 50;
 static const int BoardValue = 1000;
+static const int PlayDeterministic = false;
 
 int leafEval(const Board *board, int player) {
   int out = 0;
@@ -78,7 +79,7 @@ struct AI {
   HashTable* table;
 
   AI(HashTable* table, int time_limit) : table(table) {
-    if (time_limit == 0) {
+    if (time_limit == 0 || PlayDeterministic) {
       this->has_deadline = false;
     } else {
       auto now = steady_clock::now();
@@ -204,14 +205,14 @@ struct AI {
       }
     }
 
-    // To make it play deterministically.
-    // if (alternative_count > 0) {
-    //   out.move = *min_element(alternatives, alternatives+alternative_count);
-    // }
-
-    // To make it play non-deterministically.
-    if (alternative_count > 1) {
-      out.move = alternatives[RandN(alternative_count)];
+    if (PlayDeterministic) {
+      if (alternative_count > 0) {
+        out.move = *min_element(alternatives, alternatives+alternative_count);
+      }
+    } else {
+      if (alternative_count > 1) {
+        out.move = alternatives[RandN(alternative_count)];
+      }
     }
 
     out.nodes = nodes;

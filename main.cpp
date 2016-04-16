@@ -209,7 +209,7 @@ int main() {
         cerr << game.board;
       }
 
-      game.handleAction(&table, {"move", "2000"});
+      game.handleAction(&table, {"move", "800"});
     } else if (name == "self_play") {
       handleSelfPlay(&table);
     } else {
