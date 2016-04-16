@@ -15,7 +15,7 @@ def main(argv):
     move = 1
     field = ','.join(['0'] * 81)
     macroboard = ','.join(['-1'] * 9)
-    print_board(field, macroboard, round_num, '')
+    # print_board(field, macroboard, round_num, '')
     while True:
         for bot_id, bot in [('1', bot1), ('2', bot2)]:
             # Send inputs to bot
@@ -24,7 +24,7 @@ def main(argv):
             field = update_field(field, move, str(bot_id))
             macroboard = update_macroboard(field, move)
             # Check for winner. If winner, exit.
-            print_board(field, macroboard, round_num, move)
+            # print_board(field, macroboard, round_num, move)
             if is_winner(macroboard):
                 return
 
@@ -67,12 +67,10 @@ def send_update(bot, round_num, move, field, macroboard):
 
     bot.stdin.write(update_input)
     out = bot.stdout.readline().strip()
-    print 'bot output: ' + repr(out)
     return out
 
 
 def update_field(field, move, bot_id):
-    print move
     col, row = move.split(' ')[1:3]
     arr = field.split(',')
     index = int(row) * 9 + int(col)

@@ -1,9 +1,10 @@
-#include "ai.h"
-
 #include <algorithm>
-#include <cstdlib>
 #include <chrono>
 #include <iostream>
+
+#include "ai.h"
+#include "random.h"
+
 
 using namespace std::chrono;
 
@@ -139,6 +140,8 @@ struct AI {
     SearchResult out;
     out.score = -MaxScore;
     out.depth = depth;
+    out.move = -1;
+
     this->nodes++;
 
     int alternatives[9*9];
@@ -163,7 +166,11 @@ struct AI {
     }
 
     if (alternative_count > 1) {
-      out.move = alternatives[rand() % alternative_count];
+      out.move = alternatives[RandN(alternative_count)];
+    }
+
+    if (out.move >= 9*9) {
+      cerr << "What?" << endl;
     }
 
     out.nodes = nodes;
@@ -177,13 +184,15 @@ static const int MaxDepth = 10;
 SearchResult SearchMove(const Board *board, int player, int time_limit) {
   AI ai(time_limit);
   SearchResult out;
-  try {
-    for (int depth = 2; depth <= MaxDepth; depth += 2) {
-     SearchResult tmp = ai.SearchMove(board, player, depth);
-     out = tmp;
+  for (int depth = 2; depth <= MaxDepth; depth += 2) {
+    SearchResult tmp;
+    try {
+      tmp = ai.SearchMove(board, player, depth);
+    } catch (TimeLimitExceeded e) {
+      cerr << "Search interrupted after reaching time limit of " << time_limit << " milliseconds" << endl;
+      break;
     }
-  } catch (TimeLimitExceeded e) {
-    cerr << "Search interrupted after reaching time limit of " << time_limit << " milliseconds" << endl;
+    out = tmp;
   }
   return out;
 }

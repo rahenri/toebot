@@ -6,6 +6,7 @@
 #include "util.h"
 #include "board.h"
 #include "ai.h"
+#include "random.h"
 
 using namespace std;
 using namespace std::chrono;
@@ -147,15 +148,15 @@ void handleSelfPlay() {
       cerr << "No move found!" << endl;
       break;
     }
-    if (!board.canTick(result.move)) {
-      cerr << "Bot produced invalid move" << endl;
+    if (result.move >= 9*9 || !board.canTick(result.move)) {
+      cerr << "Bot produced invalid move: " << result.move << endl;
       break;
     }
     board.tick(result.move, player);
     int row, col;
     decodeCell(result.move, row, col);
     cout << "place_move " << col << " " << row << endl;
-    cerr << "Move Score: " << result.score << ", Nodes: " << result.nodes << endl;
+    cerr << "Move Score: " << result.score << ", Nodes: " << result.nodes << ", Depth: " << result.depth << endl;
     cerr << board;
     cerr << board.BoardRepr() << endl;
     cerr << board.MacroBoardRepr() << endl;
@@ -167,6 +168,8 @@ void handleSelfPlay() {
 }
 
 int main() {
+  RandSeed(system_clock::now().time_since_epoch().count());
+
   string line;
   Game game;
   while (getline(cin, line)) {

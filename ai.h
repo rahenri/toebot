@@ -6,10 +6,10 @@
 static const int MaxScore = 1000000;
 
 struct SearchResult {
-  int move;
-  int score;
-  int nodes;
-  int depth;
+  int move = 9*9+1;
+  int score = 0;
+  int nodes = 0;
+  int depth = 0;
 };
 
 SearchResult SearchMove(const Board *board, int player, int time_limit);

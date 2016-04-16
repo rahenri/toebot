@@ -72,7 +72,7 @@ string Board::MacroBoardRepr() const {
     if (out.size() > 0) {
       out += ',';
     }
-    out += to_string(macrocells[i]);
+    out += to_string(int(macrocells[i]));
   }
   return out;
 }
