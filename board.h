@@ -19,9 +19,8 @@ inline bool isDone(const int8_t* cells, int8_t player) {
     (((cells[2]==player) && (cells[4]==player) && (cells[6]==player)));
 }
 
-struct Board {
-  int8_t cells[9*9];
-  int8_t macrocells[9];
+class Board {
+ public:
 
   Board() {
     for (int i = 0; i < 9; i++) {
@@ -92,14 +91,27 @@ struct Board {
     }
   }
 
+  void parseBoard(const string& repr);
+  void parseMacroBoard(const string& repr);
+
   string BoardRepr() const;
   string MacroBoardRepr() const;
 
+  int8_t Cell(int cell) const {
+    return this->cells[cell];
+  }
+
+  int8_t MacroCell(int cell) const {
+    return this->macrocells[cell];
+  }
+
+ private:
+
+  int8_t cells[9*9];
+  int8_t macrocells[9];
 };
 
 ostream& operator<<(ostream& stream, const Board& board);
 
-void parseBoard(Board* board, const string& repr);
-void parseMacroBoard(Board* board, const string& repr);
 
 #endif

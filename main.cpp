@@ -88,9 +88,9 @@ struct Game {
     } else if (name == "move") {
       move = stoi(value);
     } else if (name == "field") {
-      parseBoard(&board, value);
+      board.parseBoard(value);
     } else if (name == "macroboard") {
-      parseMacroBoard(&board, value);
+      board.parseMacroBoard(value);
     } else {
       cerr << "Unknown game variable: " << name << endl;
     }
@@ -137,6 +137,7 @@ void handleSelfPlay(HashTable* table) {
   int player = 1;
   int rounds = 0;
   while(1) {
+    auto t1 = steady_clock::now();
     if (board.isOver()) {
       cerr << "Player " << (3-player) << " won" << endl;
       break;
@@ -157,8 +158,9 @@ void handleSelfPlay(HashTable* table) {
     board.tick(result.move, player);
     int row, col;
     decodeCell(result.move, row, col);
+    auto time_span = duration_cast<duration<double>>(steady_clock::now() - t1);
     cout << "place_move " << col << " " << row << endl;
-    cerr << "Move Score: " << result.score << ", Nodes: " << result.nodes << ", Depth: " << result.depth << endl;
+    cerr << "Move Score: " << result.score << ", Nodes: " << result.nodes << ", Depth: " << result.depth << " Time: " << time_span.count() << endl;
     cerr << board;
     cerr << board.BoardRepr() << endl;
     cerr << board.MacroBoardRepr() << endl;

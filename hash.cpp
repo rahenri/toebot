@@ -24,7 +24,7 @@ void InitHashConstants() {
 uint64_t HashBoard(const Board* board) {
   int next_board = -1;
   for (int i = 0; i < 9; i++) {
-    if (board->macrocells[i] == -1) {
+    if (board->MacroCell(i) == -1) {
       if (next_board == -1) {
         next_board = i;
       } else {
@@ -37,7 +37,7 @@ uint64_t HashBoard(const Board* board) {
   }
   uint64_t out = next_masks[next_board];
   for (int i = 0; i < 9*9; i++) {
-    out ^= cell_masks[i][board->cells[i]];
+    out ^= cell_masks[i][board->Cell(i)];
   }
   if (out == 0) {
     cerr << "WARNING: hash is 0" << endl;

@@ -8,14 +8,17 @@
 
 using namespace std::chrono;
 
+static const int PlayDeterministic = false;
+
 static const int DrawPenalty = 50;
 static const int BoardValue = 1000;
-static const int PlayDeterministic = false;
+static const int MaxDepth = PlayDeterministic ? 10 : 50;
 
 int leafEval(const Board *board, int player) {
   int out = 0;
   int other = 3-player;
-  for (auto c : board->macrocells) {
+  for (int i = 0; i < 9; i++) {
+    auto c = board->MacroCell(i);
     if (c == player) {
       out += BoardValue;
     } else if (c == other) {
@@ -119,6 +122,13 @@ struct AI {
       return leafEval(board, player);
     }
 
+    {
+      int upper_bound = MaxScore - (ply + 1);
+      if (upper_bound < alpha) {
+        return upper_bound;
+      }
+    }
+
     int first_cell = 0;
     auto memo = this->table->Get(board);
     if (memo != nullptr) {
@@ -168,7 +178,7 @@ struct AI {
     return best_score;
   }
 
-  SearchResult SearchMove(const Board *board, int player, int depth) {
+  SearchResult SearchMove(const Board *board, int player, int ply, int depth) {
     this->initial_player = player;
     SearchResult out;
     out.score = -MaxScore;
@@ -193,7 +203,7 @@ struct AI {
       }
       Board copy = *board;
       copy.tick(cell, player);
-      int score = -this->DeepEval(&copy, 3-player, 1, depth-1, -MaxScore, -out.score);
+      int score = -this->DeepEval(&copy, 3-player, ply+1, depth-1, -MaxScore, -out.score);
       if (score > out.score || out.move == -1) {
         out.score = score;
         out.move = cell;
@@ -204,6 +214,7 @@ struct AI {
         alternative_count++;
       }
     }
+    this->table->Insert(board, out.score, out.score, depth, out.move);
 
     if (PlayDeterministic) {
       if (alternative_count > 0) {
@@ -221,15 +232,20 @@ struct AI {
   }
 };
 
-static const int MaxDepth = PlayDeterministic ? 10 : 50;
-
 SearchResult SearchMove(HashTable* table, const Board *board, int player, int time_limit) {
+  int ply = 1;
+  for (int i = 0; i < 9*9; i++) {
+    if (board->Cell(i) != 0) {
+      ply ++;
+    }
+  }
+
   AI ai(table, time_limit);
   SearchResult out;
   for (int depth = 2; depth <= MaxDepth; depth += 2) {
     SearchResult tmp;
     try {
-      tmp = ai.SearchMove(board, player, depth);
+      tmp = ai.SearchMove(board, player, ply, depth);
     } catch (TimeLimitExceeded e) {
       cerr << "Search interrupted after reaching time limit of " << time_limit << " milliseconds" << endl;
       break;
