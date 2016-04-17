@@ -112,7 +112,7 @@ struct AI {
     }
 
     if (board->isDrawn()) {
-      return -DrawPenalty;
+      return DrawPenalty;
     }
 
     if (depth == 0) {
@@ -221,8 +221,7 @@ struct AI {
   }
 };
 
-// static const int MaxDepth = 10;
-static const int MaxDepth = 50;
+static const int MaxDepth = PlayDeterministic ? 10 : 50;
 
 SearchResult SearchMove(HashTable* table, const Board *board, int player, int time_limit) {
   AI ai(table, time_limit);
