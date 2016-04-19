@@ -155,10 +155,9 @@ struct AI {
       }
       Board copy = *board;
       copy.tick(cell, player);
-      int score = -this->DeepEval(&copy, 3-player, ply+1, depth-1, -beta, -alpha);
+      int score = -this->DeepEval(&copy, 3-player, ply+1, depth-1, -beta, -max(alpha, best_score+1));
       if (score > best_score) {
         best_score = score;
-        alpha = max(alpha, score+1);
         best_move = cell;
         if (score > beta) {
           break;
