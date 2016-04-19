@@ -1,5 +1,5 @@
 all: toebot
-CXXFLAGS=-Wall -O3 --std=c++1y -Werror
+CXXFLAGS=-Wall -O3 --std=c++1y -Werror -ggdb3
 
 OBJECTS = main.o test.o board.o util.o ai.o random.o hash.o
 
@@ -16,7 +16,7 @@ ai.o: ai.cpp ai.h
 hash.o: hash.cpp hash.h
 
 toebot: $(OBJECTS)
-	g++ $(OBJECTS) -O3 -o toebot
+	g++ $(OBJECTS) $(LDLIBS) -O3 -o toebot
 
 clean:
 	rm *.o toebot

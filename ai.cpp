@@ -8,7 +8,7 @@
 
 using namespace std::chrono;
 
-static const int PlayDeterministic = false;
+static const int PlayDeterministic = true;
 
 static const int DrawPenalty = 50;
 static const int BoardValue = 1000;
@@ -242,7 +242,7 @@ SearchResult SearchMove(HashTable* table, const Board *board, int player, int ti
 
   AI ai(table, time_limit);
   SearchResult out;
-  for (int depth = 2; depth <= MaxDepth; depth += 2) {
+  for (int depth = 2; depth <= MaxDepth; depth += 1) {
     SearchResult tmp;
     try {
       tmp = ai.SearchMove(board, player, ply, depth);
