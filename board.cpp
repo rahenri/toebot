@@ -76,3 +76,17 @@ string Board::MacroBoardRepr() const {
   }
   return out;
 }
+
+bool Board::operator==(const Board& other) const {
+  for (int i = 0; i < 9*9; i++) {
+    if (cells[i] != other.cells[i]) {
+      return false;
+    }
+  }
+  for (int i = 0; i < 9; i++) {
+    if (macrocells[i] != other.macrocells[i]) {
+      return false;
+    }
+  }
+  return true;
+}

@@ -59,22 +59,22 @@ class Board {
     return true;
   }
 
-  void tick(int cell, int player) {
+  int tick(int cell, int player) {
     cells[cell] = player;
+
+    // Clear out allowed macrocell.
+    int ret = -1;
+    for (int i = 0; i < 9; i++) {
+      if (macrocells[i] == -1) {
+        macrocells[i] = 0;
+        ret = (ret == -1) ? i : 9;
+      }
+    }
 
     // Check if current macrocell is now taken.
     int mcell = cell/9;
     if (isDone(cells + (mcell*9), player)) {
       macrocells[mcell] = player;
-    }
-
-    // Update allowed macrocell
-
-    // Clear out allowed macrocell.
-    for (int i = 0; i < 9; i++) {
-      if (macrocells[i] == -1) {
-        macrocells[i] = 0;
-      }
     }
 
     // Update next macro cell if not taken. It already taken, every not yet
@@ -88,6 +88,28 @@ class Board {
           macrocells[i] = -1;
         }
       }
+    }
+
+    return ret;
+  }
+
+  void untick(int cell, int tick_info) {
+    int mcell = cell/9;
+    cells[cell] = 0;
+    macrocells[mcell] = 0;
+    if (tick_info == 9) {
+      for (int i = 0; i < 9; i++) {
+        if (macrocells[i] == 0) {
+          macrocells[i] = -1;
+        }
+      }
+    } else {
+      for (int i = 0; i < 9; i++) {
+        if (macrocells[i] == -1) {
+          macrocells[i] = 0;
+        }
+      }
+      macrocells[tick_info] = -1;
     }
   }
 
@@ -103,6 +125,11 @@ class Board {
 
   int8_t MacroCell(int cell) const {
     return this->macrocells[cell];
+  }
+
+  bool operator==(const Board& other) const;
+  bool operator!=(const Board& other) const {
+    return !(*this == other);
   }
 
  private:

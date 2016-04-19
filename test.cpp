@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "util.h"
+#include "board.h"
 
 using namespace std;
 
@@ -38,9 +39,36 @@ bool TestDecodeEncodeCell() {
   return true;
 }
 
-bool RunTests() {
-  if (!TestDecodeEncodeCell()) {
+bool TestUnTick() {
+  Board clean;
+  Board board;
+  int info = board.tick(0, 1);
+  board.untick(0, info);
+  if (clean != board) {
+    cerr << "Boards differ";
     return false;
+  }
+
+  board.tick(0, 1);
+  clean.tick(0, 1);
+  info = board.tick(1, 2);
+  board.untick(1, info);
+  if (clean != board) {
+    cerr << "Boards differ";
+    return false;
+  }
+  return true;
+}
+
+bool RunTests() {
+  auto tests = {
+    TestDecodeEncodeCell,
+    TestUnTick,
+  };
+  for (auto test : tests) {
+    if (!test()) {
+      return false;
+    }
   }
   return true;
 }
