@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <chrono>
 #include <iostream>
+#include <memory>
 
 #include "ai.h"
 #include "hash.h"
