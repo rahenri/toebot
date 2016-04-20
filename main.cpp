@@ -128,6 +128,14 @@ struct Game {
     board.tick(cell, 3-settings.my_id);
     return true;
   }
+
+  void handleListMoves() {
+    for (int i = 0; i < 9*9; i++) {
+      if (board.canTick(i)) {
+        cerr << i << endl;
+      }
+    }
+  }
 };
 
 bool RunTests();
@@ -214,6 +222,8 @@ int main() {
       game.handleAction(&table, {"move", "800"});
     } else if (name == "self_play") {
       handleSelfPlay(&table);
+    } else if (name == "list_moves") {
+      game.handleListMoves();
     } else {
       cerr << "Unknown command: " << name << endl;
     }
