@@ -18,6 +18,7 @@ bool Board::ParseBoard(const string& repr) {
       this->cells[encodeCell(i, j)] = stoi(parts[k]);
     }
   }
+  RecomputeMacroBoard();
   return true;
 }
 
@@ -40,9 +41,10 @@ bool Board::ParseMacroBoard(const string& repr) {
           next_macro = 9;
         }
       }
-      this->macrocells[k] = v;
     }
   }
+  // We don't update macroboard here, we can compute the rest from the board
+  // itself.
   return true;
 }
 
@@ -87,6 +89,9 @@ string Board::MacroBoardRepr() const {
     int v = MacroCell(i);
     if (v == 0 && (next_macro == 9 || next_macro == i)) {
       v = -1;
+    }
+    if (v == 3) {
+      v = 0;
     }
     out += to_string(v);
   }

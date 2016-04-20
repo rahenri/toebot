@@ -20,6 +20,19 @@ inline bool isDone(const int8_t* cells, int8_t player) {
     (((cells[2]==player) && (cells[4]==player) && (cells[6]==player)));
 }
 
+inline bool isFull(const int8_t* cells) {
+  return
+    (cells[0]!=0) &&
+    (cells[1]!=0) &&
+    (cells[2]!=0) &&
+    (cells[3]!=0) &&
+    (cells[4]!=0) &&
+    (cells[5]!=0) &&
+    (cells[6]!=0) &&
+    (cells[7]!=0) &&
+    (cells[8]!=0);
+}
+
 class Board {
  public:
 
@@ -61,6 +74,21 @@ class Board {
     return true;
   }
 
+  void RecomputeMacroBoard() {
+    for (int i = 0; i < 9; ++i) {
+      const int8_t* b = cells + (i*9);
+      if (isDone(b, 1)) {
+        macrocells[i] = 1;
+      } else if (isDone(b, 2)) {
+        macrocells[i] = 2;
+      } else if (isFull(b))  {
+        macrocells[i] = 3;
+      } else {
+        macrocells[i] = 0;
+      }
+    }
+  }
+
   int tick(int cell, int player) {
     cells[cell] = player;
 
@@ -68,8 +96,11 @@ class Board {
 
     // Check if current macrocell is now taken.
     int mcell = cell/9;
-    if (isDone(cells + (mcell*9), player)) {
+    const int8_t* b = cells + (mcell*9);
+    if (isDone(b, player)) {
       macrocells[mcell] = player;
+    }  else if(isFull(b)) {
+      macrocells[mcell] = 3;
     }
 
     // Update next macro cell if not taken. It already taken, every not yet
