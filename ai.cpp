@@ -130,7 +130,7 @@ struct AI {
     }
   }
 
-  int DeepEvalRec(const Board *board, int player, int ply, int depth, int alpha, int beta) {
+  inline int DeepEvalRec(Board *board, int player, int ply, int depth, int alpha, int beta) {
     if (PrintSearchTree) {
       printer->Push(board);
       printer->Attr("player", player);
@@ -149,7 +149,7 @@ struct AI {
     return score;
   }
 
-  int DeepEval(const Board *board, int player, int ply, int depth, int alpha, int beta) {
+  inline int DeepEval(Board *board, int player, int ply, int depth, int alpha, int beta) {
     int best_score = -MaxScore;
     this->nodes++;
     this->checkDeadline();
@@ -205,9 +205,9 @@ struct AI {
       if (!board->canTick(cell)) {
         continue;
       }
-      Board copy = *board;
-      copy.tick(cell, player);
-      int score = -this->DeepEvalRec(&copy, 3-player, ply+1, depth-1, -beta, -max(alpha, best_score+1));
+      auto tick_info = board->tick(cell, player);
+      int score = -this->DeepEvalRec(board, 3-player, ply+1, depth-1, -beta, -max(alpha, best_score+1));
+      board->untick(cell, tick_info);
       if (score > best_score) {
         best_score = score;
         best_move = cell;
@@ -232,7 +232,7 @@ struct AI {
     return best_score;
   }
 
-  SearchResult SearchMove(const Board *board, int player, int ply, int depth) {
+  SearchResult SearchMove(Board *board, int player, int ply, int depth) {
     if (PrintSearchTree) {
       printer->Push(board);
       printer->Attr("player", player);
@@ -263,9 +263,9 @@ struct AI {
       if (!board->canTick(cell)) {
         continue;
       }
-      Board copy = *board;
-      copy.tick(cell, player);
-      int score = -this->DeepEvalRec(&copy, 3-player, ply+1, depth-1, -MaxScore, -out.score);
+      auto tick_info = board->tick(cell, player);
+      int score = -this->DeepEvalRec(board, 3-player, ply+1, depth-1, -MaxScore, -out.score);
+      board->untick(cell, tick_info);
       if (score > out.score || out.move == -1) {
         out.score = score;
         out.move = cell;
@@ -307,10 +307,11 @@ SearchResult SearchMove(HashTable* table, const Board *board, int player, int ti
 
   AI ai(table, time_limit);
   SearchResult out;
+  Board copy = *board;
   for (int depth = 2; depth <= DefaultMaxDepth(); depth += 1) {
     SearchResult tmp;
     try {
-      tmp = ai.SearchMove(board, player, ply, depth);
+      tmp = ai.SearchMove(&copy, player, ply, depth);
     } catch (TimeLimitExceeded e) {
       cerr << "Search interrupted after reaching time limit of " << time_limit << " milliseconds" << endl;
       break;
