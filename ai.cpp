@@ -9,7 +9,7 @@
 
 using namespace std::chrono;
 
-static const bool PlayDeterministic = true;
+static const bool PlayDeterministic = false;
 static const bool PrintSearchTree = false;
 
 static const int DrawPenalty = 50;
@@ -17,7 +17,7 @@ static const int BoardValue = 1000;
 
 constexpr int DefaultMaxDepth() {
   if (PrintSearchTree) {
-    return 6;
+    return 4;
   }
   if (PlayDeterministic) {
     return 10;
@@ -138,6 +138,8 @@ struct AI {
       printer->Attr("depth", depth);
       printer->Attr("alpha", alpha);
       printer->Attr("beta", beta);
+      printer->Attr("board", board->BoardRepr());
+      printer->Attr("macro", board->MacroBoardRepr());
     }
     int score = this->DeepEval(board, player, ply, depth, alpha, beta);
     if (PrintSearchTree) {
@@ -161,6 +163,9 @@ struct AI {
     }
 
     if (depth == 0) {
+      if (PrintSearchTree) {
+        printer->Attr("leaf", true);
+      }
       return leafEval(board, player);
     }
 
@@ -225,6 +230,14 @@ struct AI {
   }
 
   SearchResult SearchMove(const Board *board, int player, int ply, int depth) {
+    if (PrintSearchTree) {
+      printer->Push(board);
+      printer->Attr("player", player);
+      printer->Attr("ply", ply);
+      printer->Attr("depth", depth);
+      printer->Attr("board", board->BoardRepr());
+      printer->Attr("macro", board->MacroBoardRepr());
+    }
     this->initial_player = player;
     SearchResult out;
     out.score = -MaxScore;
@@ -249,7 +262,7 @@ struct AI {
       }
       Board copy = *board;
       copy.tick(cell, player);
-      int score = -this->DeepEval(&copy, 3-player, ply+1, depth-1, -MaxScore, -out.score);
+      int score = -this->DeepEvalRec(&copy, 3-player, ply+1, depth-1, -MaxScore, -out.score);
       if (score > out.score || out.move == -1) {
         out.score = score;
         out.move = cell;
@@ -274,6 +287,9 @@ struct AI {
 
     out.nodes = nodes;
 
+    if (PrintSearchTree) {
+      printer->Pop();
+    }
     return out;
   }
 };
