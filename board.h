@@ -5,6 +5,7 @@
 #include <cassert>
 
 #include "util.h"
+#include "hash.h"
 
 using namespace std;
 
@@ -43,6 +44,7 @@ class Board {
     for (int i = 0; i < 9*9; i++) {
       cells[i] = 0;
     }
+    hash = HashBoard(this);
   }
 
   inline bool wouldBeDone(int cell, int player) const {
@@ -125,13 +127,17 @@ class Board {
       }
     }
 
+    hash = UpdateHash(hash, next_macro, ret, cell, player);
+
     return ret;
   }
 
   void untick(int cell, int tick_info) {
     int mcell = cell/9;
+    int player = cells[cell];
     cells[cell] = 0;
     macrocells[mcell] = 0;
+    hash = UpdateHash(hash, next_macro, tick_info, cell, player);
     next_macro = tick_info;
   }
 
@@ -158,11 +164,16 @@ class Board {
     return next_macro;
   }
 
+  uint64_t Hash() const {
+    return hash;
+  }
+
  private:
 
   int8_t cells[9*9];
   int8_t macrocells[9];
   int8_t next_macro = 9;
+  uint64_t hash;
 };
 
 ostream& operator<<(ostream& stream, const Board& board);

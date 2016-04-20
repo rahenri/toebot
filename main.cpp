@@ -2,6 +2,7 @@
 #include <sstream>
 #include <vector>
 #include <chrono>
+#include <memory>
 
 #include "util.h"
 #include "board.h"
@@ -183,10 +184,10 @@ void handleSelfPlay(HashTable* table) {
 
 int main() {
   RandSeed(system_clock::now().time_since_epoch().count());
+  InitHashConstants();
 
   string line;
-  Game game;
-  InitHashConstants();
+  unique_ptr<Game> game(new Game);
 
   HashTable table(50000017);
 
@@ -199,11 +200,11 @@ int main() {
     string name = command[0];
     vector<string> args = sliceVector(command, 1);
     if (name == "action") {
-      game.handleAction(&table, args);
+      game->handleAction(&table, args);
     } else if (name == "settings") {
-      game.settings.update(args);
+      game->settings.update(args);
     } else if (name == "update") {
-      game.update(args);
+      game->update(args);
     } else if (name == "test") {
       bool ok = RunTests();
       if (ok) {
@@ -214,18 +215,18 @@ int main() {
     } else if (name == "move") {
       int row = stoi(args[0]);
       int col = stoi(args[1]);
-      if (!game.opponentMove(row, col)) {
+      if (!game->opponentMove(row, col)) {
         cerr << "Move failed" << endl;
         continue;
       } else {
-        cerr << game.board;
+        cerr << game->board;
       }
 
-      game.handleAction(&table, {"move", "800"});
+      game->handleAction(&table, {"move", "800"});
     } else if (name == "self_play") {
       handleSelfPlay(&table);
     } else if (name == "list_moves") {
-      game.handleListMoves();
+      game->handleListMoves();
     } else {
       cerr << "Unknown command: " << name << endl;
     }

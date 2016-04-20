@@ -2,7 +2,7 @@
 #define AI_H
 
 #include "board.h"
-#include "hash.h"
+#include "hash_table.h"
 
 static const int MaxScore = 1000000;
 

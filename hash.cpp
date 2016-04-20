@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "hash.h"
+#include "board.h"
 
 using namespace std;
 
@@ -31,13 +32,4 @@ uint64_t HashBoard(const Board* board) {
     cerr << "WARNING: hash is 0" << endl;
   }
   return out;
-}
-
-HashTable::HashTable(int size) {
-  this->size = size;
-  this->data = new BoardMemo[size];
-}
-
-HashTable::~HashTable() {
-  delete[] this->data;
 }

@@ -19,6 +19,7 @@ bool Board::ParseBoard(const string& repr) {
     }
   }
   RecomputeMacroBoard();
+  hash = HashBoard(this);
   return true;
 }
 
@@ -45,6 +46,7 @@ bool Board::ParseMacroBoard(const string& repr) {
   }
   // We don't update macroboard here, we can compute the rest from the board
   // itself.
+  hash = HashBoard(this);
   return true;
 }
 
