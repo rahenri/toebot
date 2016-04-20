@@ -3,16 +3,27 @@
 #include <iostream>
 
 #include "ai.h"
-#include "random.h"
 #include "hash.h"
+#include "random.h"
+#include "search_tree_printer.h"
 
 using namespace std::chrono;
 
-static const int PlayDeterministic = true;
+static const bool PlayDeterministic = true;
+static const bool PrintSearchTree = false;
 
 static const int DrawPenalty = 50;
 static const int BoardValue = 1000;
-static const int MaxDepth = PlayDeterministic ? 10 : 50;
+
+constexpr int DefaultMaxDepth() {
+  if (PrintSearchTree) {
+    return 6;
+  }
+  if (PlayDeterministic) {
+    return 10;
+  }
+  return 50;
+}
 
 int leafEval(const Board *board, int player) {
   int out = 0;
@@ -71,6 +82,14 @@ int listMoves(const Board* board, int8_t* moves, int player, bool need_sorting) 
   return count;
 }
 
+unique_ptr<SearchTreePrinter> search_tree_printer_single;
+
+SearchTreePrinter* tree_printer() {
+  if (search_tree_printer_single == nullptr) {
+    search_tree_printer_single.reset(new SearchTreePrinter);
+  }
+  return search_tree_printer_single.get();
+}
 
 struct AI {
   int nodes = 0;
@@ -81,6 +100,8 @@ struct AI {
   bool has_deadline;
   HashTable* table;
 
+  SearchTreePrinter* printer;
+
   AI(HashTable* table, int time_limit) : table(table) {
     if (time_limit == 0 || PlayDeterministic) {
       this->has_deadline = false;
@@ -88,6 +109,10 @@ struct AI {
       auto now = steady_clock::now();
       this->deadline = now + milliseconds(time_limit);
       this->has_deadline = true;
+    }
+
+    if (PrintSearchTree) {
+      printer = tree_printer();
     }
   }
 
@@ -103,6 +128,23 @@ struct AI {
     if (now >= this->deadline) {
       throw TimeLimitExceeded();
     }
+  }
+
+  int DeepEvalRec(const Board *board, int player, int ply, int depth, int alpha, int beta) {
+    if (PrintSearchTree) {
+      printer->Push(board);
+      printer->Attr("player", player);
+      printer->Attr("ply", ply);
+      printer->Attr("depth", depth);
+      printer->Attr("alpha", alpha);
+      printer->Attr("beta", beta);
+    }
+    int score = this->DeepEval(board, player, ply, depth, alpha, beta);
+    if (PrintSearchTree) {
+      printer->Attr("score", score);
+      printer->Pop();
+    }
+    return score;
   }
 
   int DeepEval(const Board *board, int player, int ply, int depth, int alpha, int beta) {
@@ -132,6 +174,11 @@ struct AI {
     int first_cell = 0;
     auto memo = this->table->Get(board);
     if (memo != nullptr) {
+      if (PrintSearchTree) {
+        printer->Attr("hash_hit", true);
+        printer->Attr("hash_lower_bound", memo->lower_bound);
+        printer->Attr("hash_upper_bound", memo->upper_bound);
+      }
       if (memo->depth >= depth) {
         if (memo->lower_bound == memo->upper_bound) {
           return memo->lower_bound;
@@ -155,7 +202,7 @@ struct AI {
       }
       Board copy = *board;
       copy.tick(cell, player);
-      int score = -this->DeepEval(&copy, 3-player, ply+1, depth-1, -beta, -max(alpha, best_score+1));
+      int score = -this->DeepEvalRec(&copy, 3-player, ply+1, depth-1, -beta, -max(alpha, best_score+1));
       if (score > best_score) {
         best_score = score;
         best_move = cell;
@@ -241,7 +288,7 @@ SearchResult SearchMove(HashTable* table, const Board *board, int player, int ti
 
   AI ai(table, time_limit);
   SearchResult out;
-  for (int depth = 2; depth <= MaxDepth; depth += 1) {
+  for (int depth = 2; depth <= DefaultMaxDepth(); depth += 1) {
     SearchResult tmp;
     try {
       tmp = ai.SearchMove(board, player, ply, depth);
