@@ -141,6 +141,36 @@ class Board {
     next_macro = tick_info;
   }
 
+  inline int ListMoves(uint8_t* moves, int first_move) {
+    int move_count = 0;
+    if (first_move != -1) {
+      moves[move_count++] = first_move;
+    }
+    if (next_macro != 9) {
+      int offset = next_macro*9;
+      for (int cell = offset; cell < offset+9; cell++) {
+        if (first_move == cell || (cells[cell] != 0)) {
+          continue;
+        }
+        moves[move_count++] = cell;
+      }
+    } else {
+      for (int mcell = 0; mcell < 9; mcell++) {
+        if (macrocells[mcell] != 0) {
+          continue;
+        }
+        int offset = mcell*9;
+        for (int cell = offset; cell < offset+9; cell++) {
+          if (first_move == cell || (cells[cell] != 0)) {
+            continue;
+          }
+          moves[move_count++] = cell;
+        }
+      }
+    }
+    return move_count;
+  }
+
   bool ParseBoard(const string& repr);
   bool ParseMacroBoard(const string& repr);
 

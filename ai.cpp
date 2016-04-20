@@ -177,7 +177,7 @@ struct AI {
       }
     }
 
-    int first_cell = 0;
+    int first_cell = -1;
     auto memo = this->table->Get(board);
     if (memo != nullptr) {
       if (PrintSearchTree) {
@@ -199,13 +199,13 @@ struct AI {
       first_cell = memo->move;
     }
 
-    int best_move = -1;
-    for (int i = 0; i < 9*9; i++) {
-      int cell = (i == 0) ? first_cell : ((i == first_cell) ? 0 : i);
+    uint8_t moves[9*9];
+    int move_count = board->ListMoves(moves, first_cell);
 
-      if (!board->canTick(cell)) {
-        continue;
-      }
+    int best_move = -1;
+    for (int i = 0; i < move_count; i++) {
+      int cell = moves[i];
+
       auto tick_info = board->tick(cell, player);
       int score = -this->DeepEvalRec(board, 3-player, ply+1, depth-1, -beta, -max(alpha, best_score+1));
       board->untick(cell, tick_info);
@@ -253,17 +253,18 @@ struct AI {
     int alternatives[9*9];
     int alternative_count = 0;
 
-    int first_cell = 0;
+    int first_cell = -1;
     auto memo = this->table->Get(board);
     if (memo != nullptr) {
       first_cell = memo->move;
     }
 
-    for (int i = 0; i < 9*9; i++) {
-      int cell = (i == 0) ? first_cell : ((i == first_cell) ? 0 : i);
-      if (!board->canTick(cell)) {
-        continue;
-      }
+    uint8_t moves[9*9];
+    int move_count = board->ListMoves(moves, first_cell);
+
+    for (int i = 0; i < move_count; i++) {
+      int cell = moves[i];
+
       auto tick_info = board->tick(cell, player);
       int score = -this->DeepEvalRec(board, 3-player, ply+1, depth-1, -MaxScore, -out.score);
       board->untick(cell, tick_info);
