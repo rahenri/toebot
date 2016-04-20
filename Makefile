@@ -13,6 +13,8 @@ util.o: util.cpp util.h
 
 ai.o: ai.cpp ai.h search_tree_printer.h
 
+search_tree_printer.o: search_tree_printer.cpp search_tree_printer.h board.h
+
 hash.o: hash.cpp hash.h
 
 search_tree_printer.o: search_tree_printer.cpp search_tree_printer.h board.h hash.h

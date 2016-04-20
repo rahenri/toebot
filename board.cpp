@@ -6,11 +6,11 @@
 
 using namespace std;
 
-void Board::parseBoard(const string& repr) {
+bool Board::ParseBoard(const string& repr) {
   auto parts = parseCSV(repr);
   if (parts.size() != 9*9) {
     cerr << "Bad board repr size:" << parts.size() << endl;
-    return;
+    return false;
   }
   for (int i = 0; i < 9; i++) {
     for (int j = 0; j < 9; j++) {
@@ -18,20 +18,32 @@ void Board::parseBoard(const string& repr) {
       this->cells[encodeCell(i, j)] = stoi(parts[k]);
     }
   }
+  return true;
 }
 
-void Board::parseMacroBoard(const string& repr) {
+bool Board::ParseMacroBoard(const string& repr) {
   auto parts = parseCSV(repr);
   if (parts.size() != 9) {
     cerr << "Bad macro board size: " << parts.size() << endl;
-    return;
+    return false;
   }
+  next_macro = -1;
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {
       int k = i*3+j;
-      this->macrocells[k] = stoi(parts[k]);
+      int v = stoi(parts[k]);
+      if (v == -1) {
+        v = 0;
+        if (next_macro == -1) {
+          next_macro = k;
+        } else {
+          next_macro = 9;
+        }
+      }
+      this->macrocells[k] = v;
     }
   }
+  return true;
 }
 
 ostream& operator<<(ostream& stream, const Board& board) {
@@ -72,12 +84,19 @@ string Board::MacroBoardRepr() const {
     if (out.size() > 0) {
       out += ',';
     }
-    out += to_string(int(MacroCell(i)));
+    int v = MacroCell(i);
+    if (v == 0 && (next_macro == 9 || next_macro == i)) {
+      v = -1;
+    }
+    out += to_string(v);
   }
   return out;
 }
 
 bool Board::operator==(const Board& other) const {
+  if (next_macro != other.next_macro) {
+    return false;
+  }
   for (int i = 0; i < 9*9; i++) {
     if (cells[i] != other.cells[i]) {
       return false;

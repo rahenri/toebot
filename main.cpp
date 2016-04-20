@@ -88,9 +88,9 @@ struct Game {
     } else if (name == "move") {
       move = stoi(value);
     } else if (name == "field") {
-      board.parseBoard(value);
+      board.ParseBoard(value);
     } else if (name == "macroboard") {
-      board.parseMacroBoard(value);
+      board.ParseMacroBoard(value);
     } else {
       cerr << "Unknown game variable: " << name << endl;
     }
@@ -115,6 +115,8 @@ struct Game {
     board.tick(result.move, settings.my_id);
     cerr << "Move Score: " << result.score << ", Nodes: " << result.nodes << " Depth: " << result.depth << endl;
     cerr << board;
+    cerr << board.BoardRepr() << endl;
+    cerr << board.MacroBoardRepr() << endl;
     int row, col;
     decodeCell(result.move, row, col);
     cout << "place_move " << col << " " << row << endl;

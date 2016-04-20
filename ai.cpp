@@ -211,6 +211,7 @@ struct AI {
       if (score > best_score) {
         best_score = score;
         best_move = cell;
+        // It could be alpha > beta instead.
         if (score > beta) {
           break;
         }
@@ -219,8 +220,10 @@ struct AI {
     int lower_bound = -MaxScore;
     int upper_bound = MaxScore;
     if (best_score > beta) {
+      // It could be best_score instead of beta+1
       lower_bound = beta+1;
     } else if (best_score < alpha) {
+      // It could be best_score instead of alpha-1
       upper_bound = alpha-1;
     } else {
       lower_bound = upper_bound = best_score;

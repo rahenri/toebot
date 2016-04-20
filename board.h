@@ -2,6 +2,7 @@
 #define BOARD_H
 
 #include <string>
+#include <cassert>
 
 #include "util.h"
 
@@ -24,7 +25,7 @@ class Board {
 
   Board() {
     for (int i = 0; i < 9; i++) {
-      macrocells[i] = -1;
+      macrocells[i] = 0;
     }
     for (int i = 0; i < 9*9; i++) {
       cells[i] = 0;
@@ -43,7 +44,8 @@ class Board {
   }
 
   bool canTick(int cell) const {
-    return (macrocells[cell/9] == -1) && (cells[cell] == 0);
+    int mcell = cell/9;
+    return (next_macro == mcell || (next_macro == 9 && macrocells[mcell] == 0)) && (cells[cell] == 0);
   }
 
   bool isOver() const {
@@ -62,14 +64,7 @@ class Board {
   int tick(int cell, int player) {
     cells[cell] = player;
 
-    // Clear out allowed macrocell.
-    int ret = -1;
-    for (int i = 0; i < 9; i++) {
-      if (macrocells[i] == -1) {
-        macrocells[i] = 0;
-        ret = (ret == -1) ? i : 9;
-      }
-    }
+    int ret = next_macro;
 
     // Check if current macrocell is now taken.
     int mcell = cell/9;
@@ -81,12 +76,21 @@ class Board {
     // taken macrocell is eligible for the next move.
     mcell = cell % 9;
     if (macrocells[mcell] == 0) {
-      macrocells[mcell] = -1;
+      next_macro = mcell;
     } else {
+      next_macro = -1;
       for (int i = 0; i < 9; i++) {
         if (macrocells[i] == 0) {
-          macrocells[i] = -1;
+          if (next_macro == -1) {
+            next_macro = i;
+          } else {
+            next_macro = 9;
+            break;
+          }
         }
+      }
+      if (next_macro == -1) {
+        next_macro = 9;
       }
     }
 
@@ -97,24 +101,11 @@ class Board {
     int mcell = cell/9;
     cells[cell] = 0;
     macrocells[mcell] = 0;
-    if (tick_info == 9) {
-      for (int i = 0; i < 9; i++) {
-        if (macrocells[i] == 0) {
-          macrocells[i] = -1;
-        }
-      }
-    } else {
-      for (int i = 0; i < 9; i++) {
-        if (macrocells[i] == -1) {
-          macrocells[i] = 0;
-        }
-      }
-      macrocells[tick_info] = -1;
-    }
+    next_macro = tick_info;
   }
 
-  void parseBoard(const string& repr);
-  void parseMacroBoard(const string& repr);
+  bool ParseBoard(const string& repr);
+  bool ParseMacroBoard(const string& repr);
 
   string BoardRepr() const;
   string MacroBoardRepr() const;
@@ -132,10 +123,15 @@ class Board {
     return !(*this == other);
   }
 
+  int8_t NextMacro() const {
+    return next_macro;
+  }
+
  private:
 
   int8_t cells[9*9];
   int8_t macrocells[9];
+  int8_t next_macro = 9;
 };
 
 ostream& operator<<(ostream& stream, const Board& board);
