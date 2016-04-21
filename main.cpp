@@ -153,7 +153,7 @@ void handleSelfPlay(HashTable* table) {
       cerr << "Player " << (3-player) << " won" << endl;
       break;
     }
-    if (board.isDrawn()) {
+    if (board.IsDrawn()) {
       cerr << "Draw" << endl;
       break;
     }

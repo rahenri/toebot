@@ -67,9 +67,9 @@ class Board {
     return isDone(macrocells, 1) || isDone(macrocells, 2);
   }
 
-  bool isDrawn() const {
-    for (int i = 0; i < 9*9; i++) {
-      if (canTick(i)) {
+  bool IsDrawn() const {
+    for (int i = 0; i < 9; i++) {
+      if (macrocells[i] == 0) {
         return false;
       }
     }

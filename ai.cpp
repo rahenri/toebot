@@ -159,7 +159,7 @@ struct AI {
       return -MaxScore + ply;
     }
 
-    if (board->isDrawn()) {
+    if (board->IsDrawn()) {
       return DrawPenalty;
     }
 
