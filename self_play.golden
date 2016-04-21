@@ -1,5 +1,5 @@
 place_move 0 0
-Move Score: 0, Nodes: 7113486, Depth: 10 Time: 1.02666
+Move Score: 0, Nodes: 7113486, Depth: 10 Time: 0.575596
 x........
 .........
 .........
@@ -13,7 +13,7 @@ x........
 -1,0,0,0,0,0,0,0,0
 
 place_move 1 0
-Move Score: 0, Nodes: 622771, Depth: 10 Time: 0.0887686
+Move Score: 0, Nodes: 622771, Depth: 10 Time: 0.0393349
 xo.......
 .........
 .........
@@ -27,7 +27,7 @@ xo.......
 0,-1,0,0,0,0,0,0,0
 
 place_move 3 0
-Move Score: 0, Nodes: 491881, Depth: 10 Time: 0.0812112
+Move Score: 0, Nodes: 491881, Depth: 10 Time: 0.0445391
 xo.x.....
 .........
 .........
@@ -41,7 +41,7 @@ xo.x.....
 -1,0,0,0,0,0,0,0,0
 
 place_move 2 0
-Move Score: 0, Nodes: 1260897, Depth: 10 Time: 0.145286
+Move Score: 0, Nodes: 1260897, Depth: 10 Time: 0.0801655
 xoox.....
 .........
 .........
@@ -55,7 +55,7 @@ xoox.....
 0,0,-1,0,0,0,0,0,0
 
 place_move 6 0
-Move Score: 0, Nodes: 601940, Depth: 10 Time: 0.0914277
+Move Score: 0, Nodes: 601940, Depth: 10 Time: 0.0400452
 xoox..x..
 .........
 .........
@@ -69,7 +69,7 @@ xoox..x..
 -1,0,0,0,0,0,0,0,0
 
 place_move 0 1
-Move Score: 0, Nodes: 1609881, Depth: 10 Time: 0.189442
+Move Score: 0, Nodes: 1609881, Depth: 10 Time: 0.098302
 xoox..x..
 o........
 .........
@@ -83,7 +83,7 @@ o........
 0,0,0,-1,0,0,0,0,0
 
 place_move 0 3
-Move Score: 0, Nodes: 443819, Depth: 10 Time: 0.0711164
+Move Score: 0, Nodes: 443819, Depth: 10 Time: 0.029491
 xoox..x..
 o........
 .........
@@ -97,7 +97,7 @@ x........
 -1,0,0,0,0,0,0,0,0
 
 place_move 1 1
-Move Score: 0, Nodes: 1013338, Depth: 10 Time: 0.123493
+Move Score: 0, Nodes: 1013338, Depth: 10 Time: 0.0643707
 xoox..x..
 oo.......
 .........
@@ -111,7 +111,7 @@ x........
 0,0,0,0,-1,0,0,0,0
 
 place_move 4 3
-Move Score: 0, Nodes: 809151, Depth: 10 Time: 0.123994
+Move Score: 0, Nodes: 809151, Depth: 10 Time: 0.0596384
 xoox..x..
 oo.......
 .........
@@ -125,7 +125,7 @@ x...x....
 0,-1,0,0,0,0,0,0,0
 
 place_move 4 0
-Move Score: 0, Nodes: 976071, Depth: 10 Time: 0.121899
+Move Score: 0, Nodes: 976071, Depth: 10 Time: 0.0596737
 xooxo.x..
 oo.......
 .........
@@ -139,7 +139,7 @@ x...x....
 0,-1,0,0,0,0,0,0,0
 
 place_move 5 0
-Move Score: 0, Nodes: 391608, Depth: 10 Time: 0.050586
+Move Score: 0, Nodes: 391608, Depth: 10 Time: 0.0348414
 xooxoxx..
 oo.......
 .........
@@ -153,7 +153,7 @@ x...x....
 0,0,-1,0,0,0,0,0,0
 
 place_move 7 0
-Move Score: 0, Nodes: 895562, Depth: 10 Time: 0.106709
+Move Score: 0, Nodes: 895562, Depth: 10 Time: 0.0630904
 xooxoxxo.
 oo.......
 .........
@@ -167,7 +167,7 @@ x...x....
 0,-1,0,0,0,0,0,0,0
 
 place_move 3 1
-Move Score: 0, Nodes: 218436, Depth: 10 Time: 0.0272439
+Move Score: 0, Nodes: 218436, Depth: 10 Time: 0.0187518
 xooxoxxo.
 oo.x.....
 .........
@@ -181,7 +181,7 @@ x...x....
 0,0,0,-1,0,0,0,0,0
 
 place_move 2 3
-Move Score: 0, Nodes: 895087, Depth: 10 Time: 0.110206
+Move Score: 0, Nodes: 895087, Depth: 10 Time: 0.0566625
 xooxoxxo.
 oo.x.....
 .........
@@ -195,7 +195,7 @@ x.o.x....
 0,0,-1,0,0,0,0,0,0
 
 place_move 8 0
-Move Score: 0, Nodes: 184580, Depth: 10 Time: 0.0270681
+Move Score: 0, Nodes: 184580, Depth: 10 Time: 0.0118385
 xooxoxxox
 oo.x.....
 .........
@@ -209,7 +209,7 @@ x.o.x....
 0,0,-1,0,0,0,0,0,0
 
 place_move 6 1
-Move Score: 0, Nodes: 829028, Depth: 10 Time: 0.0997346
+Move Score: 0, Nodes: 829028, Depth: 10 Time: 0.0491407
 xooxoxxox
 oo.x..o..
 .........
@@ -223,7 +223,7 @@ x.o.x....
 0,0,0,-1,0,0,0,0,0
 
 place_move 1 3
-Move Score: 0, Nodes: 190182, Depth: 10 Time: 0.0288326
+Move Score: 0, Nodes: 190182, Depth: 10 Time: 0.024455
 xooxoxxox
 oo.x..o..
 .........
@@ -237,7 +237,7 @@ xxo.x....
 0,-1,0,0,0,0,0,0,0
 
 place_move 4 1
-Move Score: 0, Nodes: 755364, Depth: 10 Time: 0.0945023
+Move Score: 0, Nodes: 755364, Depth: 10 Time: 0.0477352
 xooxoxxox
 oo.xo.o..
 .........
@@ -251,7 +251,7 @@ xxo.x....
 0,0,0,0,-1,0,0,0,0
 
 place_move 5 3
-Move Score: 0, Nodes: 268789, Depth: 10 Time: 0.0381702
+Move Score: 0, Nodes: 268789, Depth: 10 Time: 0.0204325
 xooxoxxox
 oo.xo.o..
 .........
@@ -265,7 +265,7 @@ xxo.xx...
 0,0,-1,0,0,0,0,0,0
 
 place_move 7 1
-Move Score: 0, Nodes: 582686, Depth: 10 Time: 0.08017
+Move Score: 0, Nodes: 582686, Depth: 10 Time: 0.0358423
 xooxoxxox
 oo.xo.oo.
 .........
@@ -279,7 +279,7 @@ xxo.xx...
 0,0,0,0,-1,0,0,0,0
 
 place_move 3 3
-Move Score: 0, Nodes: 286295, Depth: 10 Time: 0.0425703
+Move Score: 0, Nodes: 286295, Depth: 10 Time: 0.028882
 xooxoxxox
 oo.xo.oo.
 .........
@@ -293,7 +293,7 @@ xxoxxx...
 -1,0,0,0,1,0,0,0,0
 
 place_move 2 1
-Move Score: 0, Nodes: 675945, Depth: 10 Time: 0.0923086
+Move Score: 0, Nodes: 675945, Depth: 10 Time: 0.0488567
 xooxoxxox
 oooxo.oo.
 .........
@@ -307,7 +307,7 @@ xxoxxx...
 2,0,0,0,1,-1,0,0,0
 
 place_move 6 4
-Move Score: 0, Nodes: 1523248, Depth: 10 Time: 0.195553
+Move Score: 0, Nodes: 1523248, Depth: 10 Time: 0.105402
 xooxoxxox
 oooxo.oo.
 .........
@@ -321,7 +321,7 @@ xxoxxx...
 2,0,0,-1,1,0,0,0,0
 
 place_move 0 4
-Move Score: 0, Nodes: 1307145, Depth: 10 Time: 0.167658
+Move Score: 0, Nodes: 1307145, Depth: 10 Time: 0.0909936
 xooxoxxox
 oooxo.oo.
 .........
@@ -335,7 +335,7 @@ o.....x..
 2,0,0,-1,1,0,0,0,0
 
 place_move 2 4
-Move Score: 0, Nodes: 1524538, Depth: 10 Time: 0.195024
+Move Score: 0, Nodes: 1524538, Depth: 10 Time: 0.0951633
 xooxoxxox
 oooxo.oo.
 .........
@@ -349,7 +349,7 @@ o.x...x..
 2,0,0,0,1,-1,0,0,0
 
 place_move 8 3
-Move Score: 0, Nodes: 1059482, Depth: 10 Time: 0.144319
+Move Score: 0, Nodes: 1059482, Depth: 10 Time: 0.0785748
 xooxoxxox
 oooxo.oo.
 .........
@@ -363,7 +363,7 @@ o.x...x..
 2,0,-1,0,1,0,0,0,0
 
 place_move 8 1
-Move Score: 0, Nodes: 1131301, Depth: 10 Time: 0.157763
+Move Score: 0, Nodes: 1131301, Depth: 10 Time: 0.0743992
 xooxoxxox
 oooxo.oox
 .........
@@ -377,7 +377,7 @@ o.x...x..
 2,0,0,0,1,-1,0,0,0
 
 place_move 8 4
-Move Score: 0, Nodes: 1680194, Depth: 10 Time: 0.24212
+Move Score: 0, Nodes: 1680194, Depth: 10 Time: 0.118675
 xooxoxxox
 oooxo.oox
 .........
@@ -391,7 +391,7 @@ o.x...x.o
 2,0,0,0,1,-1,0,0,0
 
 place_move 7 5
-Move Score: 0, Nodes: 4009181, Depth: 10 Time: 0.623716
+Move Score: 0, Nodes: 4009181, Depth: 10 Time: 0.279255
 xooxoxxox
 oooxo.oox
 .........
@@ -405,7 +405,7 @@ o.x...x.o
 2,0,0,0,1,0,0,-1,0
 
 place_move 3 7
-Move Score: 0, Nodes: 1162802, Depth: 10 Time: 0.184174
+Move Score: 0, Nodes: 1162802, Depth: 10 Time: 0.0996916
 xooxoxxox
 oooxo.oox
 .........
@@ -419,7 +419,7 @@ o.x...x.o
 2,0,0,-1,1,0,0,0,0
 
 place_move 0 5
-Move Score: 0, Nodes: 1069166, Depth: 10 Time: 0.159159
+Move Score: 0, Nodes: 1069166, Depth: 10 Time: 0.0883341
 xooxoxxox
 oooxo.oox
 .........
@@ -433,7 +433,7 @@ x......x.
 2,0,0,0,1,0,-1,0,0
 
 place_move 0 7
-Move Score: 0, Nodes: 1002660, Depth: 10 Time: 0.153756
+Move Score: 0, Nodes: 1002660, Depth: 10 Time: 0.0826547
 xooxoxxox
 oooxo.oox
 .........
@@ -447,7 +447,7 @@ o..o.....
 2,0,0,-1,1,0,0,0,0
 
 place_move 2 5
-Move Score: 0, Nodes: 426477, Depth: 10 Time: 0.0675037
+Move Score: 0, Nodes: 426477, Depth: 10 Time: 0.0350154
 xooxoxxox
 oooxo.oox
 .........
@@ -461,7 +461,7 @@ o..o.....
 2,0,0,0,1,0,0,0,-1
 
 place_move 7 6
-Move Score: 0, Nodes: 1119944, Depth: 10 Time: 0.212669
+Move Score: 0, Nodes: 1119944, Depth: 10 Time: 0.126032
 xooxoxxox
 oooxo.oox
 .........
@@ -475,7 +475,7 @@ o..o.....
 2,-1,0,0,1,0,0,0,0
 
 place_move 3 2
-Move Score: 0, Nodes: 475011, Depth: 10 Time: 0.0732751
+Move Score: 0, Nodes: 475011, Depth: 10 Time: 0.0332683
 xooxoxxox
 oooxo.oox
 ...x.....
@@ -489,7 +489,7 @@ o..o.....
 2,1,0,0,1,0,-1,0,0
 
 place_move 0 8
-Move Score: 0, Nodes: 547493, Depth: 10 Time: 0.108309
+Move Score: 0, Nodes: 547493, Depth: 10 Time: 0.0630459
 xooxoxxox
 oooxo.oox
 ...x.....
@@ -503,7 +503,7 @@ o........
 2,1,0,0,1,0,-1,0,0
 
 place_move 0 6
-Move Score: 0, Nodes: 3314721, Depth: 10 Time: 0.584365
+Move Score: 0, Nodes: 3314721, Depth: 10 Time: 0.279693
 xooxoxxox
 oooxo.oox
 ...x.....
@@ -517,7 +517,7 @@ o........
 2,1,-1,-1,1,-1,-1,-1,-1
 
 place_move 7 2
-Move Score: 0, Nodes: 4944213, Depth: 10 Time: 0.899102
+Move Score: 0, Nodes: 4944213, Depth: 10 Time: 0.386053
 xooxoxxox
 oooxo.oox
 ...x...o.
@@ -531,7 +531,7 @@ o........
 2,1,2,0,1,0,0,-1,0
 
 place_move 5 6
-Move Score: 0, Nodes: 4177167, Depth: 10 Time: 0.773491
+Move Score: 0, Nodes: 4177167, Depth: 10 Time: 0.353821
 xooxoxxox
 oooxo.oox
 ...x...o.
@@ -545,7 +545,7 @@ o........
 2,1,2,-1,1,-1,-1,-1,-1
 
 place_move 3 8
-Move Score: 0, Nodes: 18201226, Depth: 10 Time: 3.10581
+Move Score: 0, Nodes: 18201226, Depth: 10 Time: 1.51735
 xooxoxxox
 oooxo.oox
 ...x...o.
@@ -559,7 +559,7 @@ o..o.....
 2,1,2,0,1,0,-1,0,0
 
 place_move 1 8
-Move Score: 0, Nodes: 1100577, Depth: 10 Time: 0.257226
+Move Score: 0, Nodes: 1100577, Depth: 10 Time: 0.12429
 xooxoxxox
 oooxo.oox
 ...x...o.
@@ -573,7 +573,7 @@ ox.o.....
 2,1,2,0,1,0,0,-1,0
 
 place_move 5 8
-Move Score: 0, Nodes: 478131, Depth: 10 Time: 0.111045
+Move Score: 0, Nodes: 478131, Depth: 10 Time: 0.048769
 xooxoxxox
 oooxo.oox
 ...x...o.
@@ -587,7 +587,7 @@ ox.o.o...
 2,1,2,0,1,0,0,0,-1
 
 place_move 6 8
-Move Score: 0, Nodes: 1559612, Depth: 10 Time: 0.322633
+Move Score: 0, Nodes: 1559612, Depth: 10 Time: 0.156797
 xooxoxxox
 oooxo.oox
 ...x...o.
@@ -601,7 +601,7 @@ ox.o.ox..
 2,1,2,0,1,0,-1,0,0
 
 place_move 2 7
-Move Score: -999946, Nodes: 179105, Depth: 10 Time: 0.0294251
+Move Score: -999946, Nodes: 179105, Depth: 10 Time: 0.0161131
 xooxoxxox
 oooxo.oox
 ...x...o.
@@ -615,7 +615,7 @@ ox.o.ox..
 2,1,2,0,1,-1,0,0,0
 
 place_move 6 5
-Move Score: 999946, Nodes: 96129, Depth: 10 Time: 0.0192438
+Move Score: 999946, Nodes: 96129, Depth: 10 Time: 0.00978791
 xooxoxxox
 oooxo.oox
 ...x...o.
@@ -629,7 +629,7 @@ ox.o.ox..
 2,1,2,0,1,0,-1,0,0
 
 place_move 2 8
-Move Score: -999946, Nodes: 1468, Depth: 10 Time: 0.000271414
+Move Score: -999946, Nodes: 1468, Depth: 10 Time: 0.000263841
 xooxoxxox
 oooxo.oox
 ...x...o.
@@ -643,7 +643,7 @@ oxoo.ox..
 2,1,2,0,1,0,0,0,-1
 
 place_move 8 8
-Move Score: 999946, Nodes: 18927, Depth: 10 Time: 0.00338836
+Move Score: 999946, Nodes: 18927, Depth: 10 Time: 0.00200011
 xooxoxxox
 oooxo.oox
 ...x...o.
@@ -657,7 +657,7 @@ oxoo.ox.x
 2,1,2,0,1,0,0,0,-1
 
 place_move 8 7
-Move Score: -999946, Nodes: 1487, Depth: 10 Time: 0.000258564
+Move Score: -999946, Nodes: 1487, Depth: 10 Time: 0.00013587
 xooxoxxox
 oooxo.oox
 ...x...o.
@@ -671,7 +671,7 @@ oxoo.ox.x
 2,1,2,0,1,-1,0,0,0
 
 place_move 6 3
-Move Score: 999946, Nodes: 2468, Depth: 10 Time: 0.000425433
+Move Score: 999946, Nodes: 2468, Depth: 10 Time: 0.000211842
 xooxoxxox
 oooxo.oox
 ...x...o.
@@ -685,7 +685,7 @@ oxoo.ox.x
 2,1,2,-1,1,1,-1,-1,-1
 
 place_move 1 5
-Move Score: -999946, Nodes: 663, Depth: 10 Time: 0.000105222
+Move Score: -999946, Nodes: 663, Depth: 10 Time: 4.8778e-05
 xooxoxxox
 oooxo.oox
 ...x...o.
@@ -699,7 +699,7 @@ oxoo.ox.x
 2,1,2,0,1,1,0,-1,0
 
 place_move 3 6
-Move Score: 999946, Nodes: 1242, Depth: 10 Time: 0.000260796
+Move Score: 999946, Nodes: 1242, Depth: 10 Time: 8.3248e-05
 xooxoxxox
 oooxo.oox
 ...x...o.
@@ -713,7 +713,7 @@ oxoo.ox.x
 2,1,2,-1,1,1,-1,-1,-1
 
 place_move 1 4
-Move Score: -999946, Nodes: 1983, Depth: 10 Time: 0.000321692
+Move Score: -999946, Nodes: 1983, Depth: 10 Time: 0.000140587
 xooxoxxox
 oooxo.oox
 ...x...o.
@@ -727,7 +727,7 @@ oxoo.ox.x
 2,1,2,0,1,1,-1,-1,-1
 
 place_move 4 6
-Move Score: 999946, Nodes: 216, Depth: 10 Time: 3.8855e-05
+Move Score: 999946, Nodes: 216, Depth: 10 Time: 1.512e-05
 xooxoxxox
 oooxo.oox
 ...x...o.
@@ -742,4 +742,4 @@ oxoo.ox.x
 
 Player 1 won
 Rounds: 53
-Command took 11675 milliseconds.
+Command took 5815.72 milliseconds.

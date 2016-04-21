@@ -10,7 +10,7 @@
 
 using namespace std::chrono;
 
-static const bool PlayDeterministic = false;
+static const bool PlayDeterministic = true;
 static const bool PrintSearchTree = false;
 
 static const int DrawPenalty = 50;
