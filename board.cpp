@@ -20,6 +20,7 @@ bool Board::ParseBoard(const string& repr) {
   }
   RecomputeMacroBoard();
   hash = HashBoard(this);
+  this->done = (isDone(this->macrocells, 1) || isDone(macrocells, 2));
   return true;
 }
 

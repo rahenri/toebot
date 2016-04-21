@@ -21,6 +21,55 @@ inline bool isDone(const int8_t* cells, int8_t player) {
     (((cells[2]==player) && (cells[4]==player) && (cells[6]==player)));
 }
 
+inline bool isDoneWithCell(const int8_t* cells, int cell, int8_t player) {
+  switch(cell) {
+    case 0:
+      return
+        (cells[1]==player && cells[2]==player) ||
+        (cells[3]==player && cells[6]==player) ||
+        (cells[4]==player && cells[8]==player);
+    case 1:
+      return
+        (cells[0]==player && cells[2]==player) ||
+        (cells[4]==player && cells[7]==player);
+    case 2:
+      return
+        (cells[0]==player && cells[1]==player) ||
+        (cells[5]==player && cells[8]==player) ||
+        (cells[4]==player && cells[6]==player);
+    case 3:
+      return
+        (cells[4]==player && cells[5]==player) ||
+        (cells[0]==player && cells[6]==player);
+    case 4:
+      return
+        (cells[3]==player && cells[5]==player) ||
+        (cells[1]==player && cells[7]==player) ||
+        (cells[0]==player && cells[8]==player) ||
+        (cells[2]==player && cells[6]==player);
+    case 5:
+      return
+        (cells[3]==player && cells[4]==player) ||
+        (cells[2]==player && cells[8]==player);
+    case 6:
+      return
+        (cells[7]==player && cells[8]==player) ||
+        (cells[0]==player && cells[3]==player) ||
+        (cells[2]==player && cells[4]==player);
+    case 7:
+      return
+        (cells[6]==player && cells[8]==player) ||
+        (cells[1]==player && cells[4]==player);
+    case 8:
+      return
+        (cells[6]==player && cells[7]==player) ||
+        (cells[2]==player && cells[5]==player) ||
+        (cells[0]==player && cells[4]==player);
+  }
+  assert(false);
+  return false;
+}
+
 inline bool isFull(const int8_t* cells) {
   return
     (cells[0]!=0) &&
@@ -55,7 +104,7 @@ class Board {
       copy[i] = board[i];
     }
     copy[cell%9] = player;
-    return isDone(copy, player);
+    return isDoneWithCell(copy, cell, player);
   }
 
   bool canTick(int cell) const {
@@ -64,7 +113,7 @@ class Board {
   }
 
   bool isOver() const {
-    return isDone(macrocells, 1) || isDone(macrocells, 2);
+    return done;
   }
 
   bool IsDrawn() const {
@@ -99,13 +148,16 @@ class Board {
     // Check if current macrocell is now taken.
     int mcell = cell/9;
     const int8_t* b = cells + (mcell*9);
-    if (isDone(b, player)) {
+    if (isDoneWithCell(b, cell%9, player)) {
       macrocells[mcell] = player;
+      if (isDoneWithCell(macrocells, mcell, player)) {
+        done = true;
+      }
     }  else if(isFull(b)) {
       macrocells[mcell] = 3;
     }
 
-    // Update next macro cell if not taken. It already taken, every not yet
+    // Update next macro cell if not taken. It is already taken, every not yet
     // taken macrocell is eligible for the next move.
     mcell = cell % 9;
     if (macrocells[mcell] == 0) {
@@ -139,6 +191,7 @@ class Board {
     macrocells[mcell] = 0;
     hash = UpdateHash(hash, next_macro, tick_info, cell, player);
     next_macro = tick_info;
+    done = false;
   }
 
   inline int ListMoves(uint8_t* moves, int first_move) {
@@ -204,6 +257,7 @@ class Board {
   int8_t macrocells[9];
   int8_t next_macro = 9;
   uint64_t hash;
+  bool done = false;
 };
 
 ostream& operator<<(ostream& stream, const Board& board);
