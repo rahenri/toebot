@@ -10,7 +10,7 @@
 
 using namespace std::chrono;
 
-static const bool PlayDeterministic = false;
+static const bool PlayDeterministic = true;
 static const bool PrintSearchTree = false;
 
 static const int DrawPenalty = 50;
@@ -176,6 +176,10 @@ struct AI {
       int upper_bound = MaxScore - (ply + 1);
       if (upper_bound < alpha) {
         return upper_bound;
+      }
+      int lower_bound = -MaxScore + (ply + 2);
+      if (lower_bound > beta) {
+        return lower_bound;
       }
     }
 
