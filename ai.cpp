@@ -18,7 +18,7 @@ static const int BoardValue = 1000;
 
 static const int HashMinDepth = 2;
 
-constexpr int DefaultMaxDepth() {
+int DefaultMaxDepth() {
   if (PrintSearchTree) {
     return 4;
   }
