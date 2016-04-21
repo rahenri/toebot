@@ -23,13 +23,12 @@ void InitHashConstants() {
 }
 
 uint64_t HashBoard(const Board* board) {
-  assert(board->NextMacro() >= 0 && board->NextMacro() < 10);
   uint64_t out = next_masks[board->NextMacro()];
   for (int i = 0; i < 9*9; i++) {
     out ^= cell_masks[i][board->Cell(i)];
   }
-  if (out == 0) {
-    cerr << "WARNING: hash is 0" << endl;
-  }
+  // if (out == 0) {
+  //   cerr << "WARNING: hash is 0" << endl;
+  // }
   return out;
 }

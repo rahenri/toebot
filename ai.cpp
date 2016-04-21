@@ -16,12 +16,14 @@ static const bool PrintSearchTree = false;
 static const int DrawPenalty = 50;
 static const int BoardValue = 1000;
 
+static const int HashMinDepth = 2;
+
 constexpr int DefaultMaxDepth() {
   if (PrintSearchTree) {
     return 4;
   }
   if (PlayDeterministic) {
-    return 10;
+    return 11;
   }
   return 50;
 }
@@ -178,25 +180,27 @@ struct AI {
     }
 
     int first_cell = -1;
-    auto memo = this->table->Get(board);
-    if (memo != nullptr) {
-      if (PrintSearchTree) {
-        printer->Attr("hash_hit", true);
-        printer->Attr("hash_lower_bound", memo->lower_bound);
-        printer->Attr("hash_upper_bound", memo->upper_bound);
+    if (depth >= HashMinDepth) {
+      auto memo = this->table->Get(board);
+      if (memo != nullptr) {
+        if (PrintSearchTree) {
+          printer->Attr("hash_hit", true);
+          printer->Attr("hash_lower_bound", memo->lower_bound);
+          printer->Attr("hash_upper_bound", memo->upper_bound);
+        }
+        if (memo->depth >= depth) {
+          if (memo->lower_bound == memo->upper_bound) {
+            return memo->lower_bound;
+          }
+          if (memo->lower_bound > beta) {
+            return memo->lower_bound;
+          }
+          if (memo->upper_bound < alpha) {
+            return memo->upper_bound;
+          }
+        }
+        first_cell = memo->move;
       }
-      if (memo->depth >= depth) {
-        if (memo->lower_bound == memo->upper_bound) {
-          return memo->lower_bound;
-        }
-        if (memo->lower_bound > beta) {
-          return memo->lower_bound;
-        }
-        if (memo->upper_bound < alpha) {
-          return memo->upper_bound;
-        }
-      }
-      first_cell = memo->move;
     }
 
     uint8_t moves[9*9];
@@ -218,18 +222,20 @@ struct AI {
         }
       }
     }
-    int lower_bound = -MaxScore;
-    int upper_bound = MaxScore;
-    if (best_score > beta) {
-      // It could be best_score instead of beta+1
-      lower_bound = beta+1;
-    } else if (best_score < alpha) {
-      // It could be best_score instead of alpha-1
-      upper_bound = alpha-1;
-    } else {
-      lower_bound = upper_bound = best_score;
+    if (depth >= HashMinDepth) {
+      int lower_bound = -MaxScore;
+      int upper_bound = MaxScore;
+      if (best_score > beta) {
+        // It could be best_score instead of beta+1
+        lower_bound = beta+1;
+      } else if (best_score < alpha) {
+        // It could be best_score instead of alpha-1
+        upper_bound = alpha-1;
+      } else {
+        lower_bound = upper_bound = best_score;
+      }
+      this->table->Insert(board, lower_bound, upper_bound, depth, best_move);
     }
-    this->table->Insert(board, lower_bound, upper_bound, depth, best_move);
     return best_score;
   }
 
