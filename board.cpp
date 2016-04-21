@@ -45,6 +45,9 @@ bool Board::ParseMacroBoard(const string& repr) {
       }
     }
   }
+  if (next_macro == -1) {
+    next_macro = 9;
+  }
   // We don't update macroboard here, we can compute the rest from the board
   // itself.
   hash = HashBoard(this);
