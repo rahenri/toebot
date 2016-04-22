@@ -7,6 +7,7 @@
 #include "hash.h"
 #include "random.h"
 #include "search_tree_printer.h"
+#include "score_table.h"
 
 using namespace std::chrono;
 
@@ -27,25 +28,13 @@ int DefaultMaxDepth() {
   return 50;
 }
 
-static const int boardValues[9] = {
-  3000, 2000, 3000,
-  2000, 4000, 2000,
-  3000, 2000, 3000,
-};
-
 int leafEval(const Board *board, int player) {
-  int out = 0;
-  int other = 3-player;
-  for (int i = 0; i < 9; i++) {
-    auto c = board->MacroCell(i);
-    int value = boardValues[i];
-    if (c == player) {
-      out += value;
-    } else if (c == other) {
-      out -= value;
-    }
+  int code = 0;
+  for (int i = 8; i >= 0; i--) {
+    code = (code << 2) + board->MacroCell(i);
   }
-  return out;
+  int score = (score_lookup_table[code].score * 10000);
+  return (player == 1) ? score : -score;
 }
 
 struct TimeLimitExceeded {
