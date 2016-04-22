@@ -2,36 +2,78 @@
 
 import os
 import sys
+import argparse
+import random
+import multiprocessing
 from subprocess import Popen, PIPE, STDOUT
 
 
-def main(argv):
+def main(args):
+
+  bot_names = [args.bots[0], args.bots[1]]
+  accounting = {
+      'Draw': 0,
+      bot_names[0]: 0,
+      bot_names[1]: 0,
+  }
+
+  pairs = []
+  for i in range(args.count):
+    pairs.append(list(bot_names))
+    bot_names.reverse()
+
+  pool = multiprocessing.Pool(processes=args.workers) 
+
+  for result in pool.imap(OneRound, pairs):
+    accounting[result] += 1
+
+    # print summary
+    elements = []
+    for k in sorted(accounting.keys()):
+      elements.append('"{}":{}'.format(k, accounting[k]))
+    print ' '.join(elements)
+
+    sys.stdout.flush()
+
+
+def OneRound(bot_names):
   # Get robots who are fighting (player1, player2)
-  bot1, bot2 = get_bots(argv[1], argv[2])
+  bots = get_bots(bot_names[0], bot_names[1])
+
   # Simulate game init input
-  send_init('1', bot1)
-  send_init('2', bot2)
+  send_init('1', bots[0], args.time_per_move)
+  send_init('2', bots[1], args.time_per_move)
   round_num = 1
   move = 1
   field = ','.join(['0'] * 81)
   macroboard = ','.join(['-1'] * 9)
+  turn = 0
+  result = ''
   while True:
-    for bot_id, bot in [('1', bot1), ('2', bot2)]:
-      # Send inputs to bot
-      move = send_update(bot, round_num, move, field, macroboard)
-      # Update macroboard and game field
-      field = update_field(field, move, str(bot_id))
-      macroboard = update_macroboard(field, move)
-      # Check for winner. If winner, exit.
-      if is_winner(macroboard):
-        print 'Player {}'.format(m[opt[0]])
-        return
+    bot = bots[turn]
+    bot_id = turn+1
+    # Send inputs to bot
+    move = send_update(bot, round_num, move, field, macroboard, args.time_per_move)
+    # Update macroboard and game field
+    field = update_field(field, move, str(bot_id))
+    macroboard = update_macroboard(field, move)
+    # Check for winner. If winner, exit.
+    if is_winner(macroboard):
+      result = bot_names[turn]
+      break
 
-      if is_draw(macroboard):
-        print 'Draw'
-        return
+    if is_draw(macroboard):
+      result = 'Draw'
+      break
 
-      round_num += 1
+    round_num += 1
+    turn = 1-turn
+
+  for b in bots:
+    b.stdin.close()
+
+  return result
+
 
 
 def get_bots(path1, path2):
@@ -41,28 +83,29 @@ def get_bots(path1, path2):
   return bot1, bot2
 
 
-def send_init(bot_id, bot):
+def send_init(bot_id, bot, time_per_move):
   init_input = (
     'settings timebank 10000\n'
-    'settings time_per_move 500\n'
+    'settings time_per_move {time_per_move}\n'
     'settings player_names player1,player2\n'
     'settings your_bot player{bot_id}\n'
-    'settings your_botid {bot_id}\n'.format(bot_id=bot_id))
+    'settings your_botid {bot_id}\n'.format(bot_id=bot_id, time_per_move=time_per_move))
 
   bot.stdin.write(init_input)
 
 
-def send_update(bot, round_num, move, field, macroboard):
+def send_update(bot, round_num, move, field, macroboard, time_per_move):
   update_input = (
     'update game round {round}\n'
     'update game move {move}\n'
     'update game field {field}\n'
     'update game macroboard {macro}\n'
-    'action move 10000\n'.format(
+    'action move {time_per_move}\n'.format(
       round=round_num,
       move=move,
       field=field,
-      macro=macroboard))
+      macro=macroboard,
+      time_per_move=time_per_move))
 
   bot.stdin.write(update_input)
   out = bot.stdout.readline().strip()
@@ -170,8 +213,18 @@ def is_winner(macroboard):
 
 def is_draw(macroboard):
   parts = macroboard.split(',')
-  return not ('0' in parts)
+  if '0' in parts:
+    return False
+  if '-1' in parts:
+    return False
+  return True
 
 
 if __name__ == '__main__':
-  main(sys.argv)
+  parser = argparse.ArgumentParser(description='Run two bots againts each other.')
+  parser.add_argument('bots', nargs=2, metavar=('bot1', 'bot2'), help='The two bots to face each other')
+  parser.add_argument('--count', type=int, default=1, help='Number of times to run the bots (Default: 1)')
+  parser.add_argument('--time-per-move', type=int, default=500, help='Milliseconds added to time bank each turn (Default: 500)')
+  parser.add_argument('--workers', type=int, default=1, help='Number of parallel workers (Default: 1)')
+  args = parser.parse_args()
+  main(args)
