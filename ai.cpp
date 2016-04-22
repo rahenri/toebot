@@ -14,7 +14,6 @@ static const bool PlayDeterministic = false;
 static const bool PrintSearchTree = false;
 
 static const int DrawPenalty = 50;
-static const int BoardValue = 1000;
 
 static const int HashMinDepth = 2;
 
@@ -28,20 +27,26 @@ int DefaultMaxDepth() {
   return 50;
 }
 
+static const int boardValues[9] = {
+  3000, 2000, 3000,
+  2000, 4000, 2000,
+  3000, 2000, 3000,
+};
+
 int leafEval(const Board *board, int player) {
   int out = 0;
   int other = 3-player;
   for (int i = 0; i < 9; i++) {
     auto c = board->MacroCell(i);
+    int value = boardValues[i];
     if (c == player) {
-      out += BoardValue;
+      out += value;
     } else if (c == other) {
-      out -= BoardValue;
+      out -= value;
     }
   }
   return out;
 }
-
 
 struct TimeLimitExceeded {
 };
@@ -319,6 +324,7 @@ SearchResult SearchMove(HashTable* table, const Board *board, int player, int ti
 
   AI ai(table, time_limit);
   SearchResult out;
+  out.move = -1;
   Board copy = *board;
   for (int depth = 2; depth <= DefaultMaxDepth(); depth += 1) {
     SearchResult tmp;

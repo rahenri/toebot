@@ -77,10 +77,10 @@ struct Game {
 
   Board board;
 
-  void update(const vector<string>& args) {
+  bool update(const vector<string>& args) {
     if (args.size() != 3) {
-      cerr << "Wrong number of arguments to update game" << endl;
-      return;
+      cerr << "Wrong number of arguments to update game: " << endl;
+      return false;
     }
     string name = args[1];
     string value = args[2];
@@ -89,12 +89,13 @@ struct Game {
     } else if (name == "move") {
       move = stoi(value);
     } else if (name == "field") {
-      board.ParseBoard(value);
+      return board.ParseBoard(value);
     } else if (name == "macroboard") {
-      board.ParseMacroBoard(value);
+      return board.ParseMacroBoard(value);
     } else {
       cerr << "Unknown game variable: " << name << endl;
     }
+    return true;
   }
 
   SearchResult bestCell(HashTable* table, int time_limit) {
@@ -103,24 +104,25 @@ struct Game {
     return result;
   }
 
-  void handleAction(HashTable* table, const vector<string>& args) {
+  bool handleAction(HashTable* table, const vector<string>& args) {
     int time_limit = DefaultTimeLimit;
     if (args.size() >= 2) {
-      time_limit = max(settings.time_per_move, min(stoi(args[1]) - 50, DefaultTimeLimit));
+      time_limit = min(stoi(args[1]) - 50, DefaultTimeLimit);
     }
     SearchResult result = bestCell(table, time_limit);
     if (result.move == -1) {
       cerr << "No cell available" << endl;
-      return;
+      return false;
     }
     board.tick(result.move, settings.my_id);
-    cerr << "Move Score: " << result.score << ", Nodes: " << result.nodes << " Depth: " << result.depth << endl;
+    cerr << "Move Score: " << result.score << ", Nodes: " << result.nodes << " Depth: " << result.depth << " Move: " << result.move << endl;
     cerr << board;
     cerr << board.BoardRepr() << endl;
     cerr << board.MacroBoardRepr() << endl;
     int row, col;
     decodeCell(result.move, row, col);
     cout << "place_move " << col << " " << row << endl;
+    return true;
   }
 
   bool opponentMove(int row, int col) {
@@ -183,7 +185,8 @@ void handleSelfPlay(HashTable* table) {
 }
 
 int main() {
-  RandSeed(system_clock::now().time_since_epoch().count());
+  RandSeed(
+      duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count());
   InitHashConstants();
 
   string line;
@@ -199,12 +202,13 @@ int main() {
     }
     string name = command[0];
     vector<string> args = sliceVector(command, 1);
+    bool success = true;
     if (name == "action") {
       game->handleAction(&table, args);
     } else if (name == "settings") {
       game->settings.update(args);
     } else if (name == "update") {
-      game->update(args);
+      success = game->update(args);
     } else if (name == "test") {
       bool ok = RunTests();
       if (ok) {
@@ -229,6 +233,9 @@ int main() {
       game->handleListMoves();
     } else {
       cerr << "Unknown command: " << name << endl;
+    }
+    if (!success) {
+      cerr << "Command failed: " << line << endl;
     }
     steady_clock::time_point t2 = steady_clock::now();
     duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
