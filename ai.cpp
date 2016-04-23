@@ -135,7 +135,6 @@ struct AI {
   }
 
   inline int DeepEval(Board *board, int player, int ply, int depth, int alpha, int beta) {
-    int best_score = -MaxScore;
     this->nodes++;
     this->checkDeadline();
 
@@ -145,13 +144,6 @@ struct AI {
 
     if (board->IsDrawn()) {
       return DrawPenalty;
-    }
-
-    if (depth == 0) {
-      if (PrintSearchTree) {
-        printer->Attr("leaf", true);
-      }
-      return leafEval(board, player);
     }
 
     {
@@ -189,8 +181,22 @@ struct AI {
       }
     }
 
+    int move_count = 0;
     uint8_t moves[9*9];
-    int move_count = board->ListMoves(moves, first_cell);
+    int best_score = -MaxScore;
+
+    if (depth <= 0) {
+      if (PrintSearchTree) {
+        printer->Attr("leaf", true);
+      }
+      best_score = leafEval(board, player);
+      if (best_score > beta) {
+        return best_score;
+      }
+      move_count = board->ListCaptureMoves(moves, player);
+    } else {
+      move_count = board->ListMoves(moves, first_cell);
+    }
 
     int best_move = -1;
     for (int i = 0; i < move_count; i++) {

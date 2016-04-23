@@ -3,6 +3,7 @@
 
 #include <string>
 #include <cassert>
+#include <cstdint>
 
 #include "util.h"
 #include "hash.h"
@@ -89,6 +90,7 @@ class Board {
   Board() {
     for (int i = 0; i < 9; i++) {
       macrocells[i] = 0;
+      boards[i] = 0;
     }
     for (int i = 0; i < 9*9; i++) {
       cells[i] = 0;
@@ -194,6 +196,37 @@ class Board {
     done = false;
   }
 
+  inline int ListCaptureMoves(uint8_t* moves, int player) {
+    int move_count = 0;
+    if (next_macro != 9) {
+      int offset = next_macro*9;
+      for (int cell = offset; cell < offset+9; cell++) {
+        if (cells[cell] != 0) {
+          continue;
+        }
+        if (isDoneWithCell(cells+offset, cell-offset, player)) {
+          moves[move_count++] = cell;
+        }
+      }
+    } else {
+      for (int mcell = 0; mcell < 9; mcell++) {
+        if (macrocells[mcell] != 0) {
+          continue;
+        }
+        int offset = mcell*9;
+        for (int cell = offset; cell < offset+9; cell++) {
+          if (cells[cell] != 0) {
+            continue;
+          }
+          if (isDoneWithCell(cells+offset, cell-offset, player)) {
+            moves[move_count++] = cell;
+          }
+        }
+      }
+    }
+    return move_count;
+  }
+
   inline int ListMoves(uint8_t* moves, int first_move) {
     int move_count = 0;
     if (first_move != -1) {
@@ -257,6 +290,7 @@ class Board {
   int8_t macrocells[9];
   int8_t next_macro = 9;
   uint64_t hash;
+  uint32_t boards[9];
   bool done = false;
 };
 
