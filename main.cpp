@@ -9,11 +9,10 @@
 #include "ai.h"
 #include "random.h"
 #include "score_table.h"
+#include "flags.h"
 
 using namespace std;
 using namespace std::chrono;
-
-static const int DefaultTimeLimit = 800;
 
 vector<string> parseLine(const string& line) {
   vector<string> out;
@@ -194,7 +193,7 @@ int main() {
   string line;
   unique_ptr<Game> game(new Game);
 
-  HashTable table(50000017);
+  HashTable table(PonderMode ? 400000009 : 50000017);
 
   while (getline(cin, line)) {
     steady_clock::time_point t1 = steady_clock::now();

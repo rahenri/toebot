@@ -8,25 +8,13 @@
 #include "random.h"
 #include "search_tree_printer.h"
 #include "score_table.h"
+#include "flags.h"
 
 using namespace std::chrono;
-
-static const bool PlayDeterministic = false;
-static const bool PrintSearchTree = false;
 
 static const int DrawPenalty = 50;
 
 static const int HashMinDepth = 2;
-
-int DefaultMaxDepth() {
-  if (PrintSearchTree) {
-    return 4;
-  }
-  if (PlayDeterministic) {
-    return 11;
-  }
-  return 50;
-}
 
 int leafEval(const Board *board, int player) {
   int code = 0;
@@ -258,9 +246,16 @@ struct AI {
     int alternative_count = 0;
 
     int first_cell = -1;
-    auto memo = this->table->Get(board);
-    if (memo != nullptr) {
-      first_cell = memo->move;
+    if (!PonderMode) {
+      auto memo = this->table->Get(board);
+      if (memo != nullptr) {
+        first_cell = memo->move;
+      }
+    }
+
+    if (PonderMode) {
+      cerr << "-------------------------------" << endl;
+      cerr << "Depth: " << depth << endl;
     }
 
     uint8_t moves[9*9];
@@ -270,7 +265,11 @@ struct AI {
       int cell = moves[i];
 
       auto tick_info = board->tick(cell, player);
-      int score = -this->DeepEvalRec(board, 3-player, ply+1, depth-1, -MaxScore, -out.score);
+      int beta = PonderMode ? MaxScore : -out.score;
+      int score = -this->DeepEvalRec(board, 3-player, ply+1, depth-1, -MaxScore, beta);
+      if (PonderMode) {
+        cerr << cell << ": " << score << endl;
+      }
       board->untick(cell, tick_info);
       if (score > out.score || out.move == -1) {
         out.score = score;
@@ -315,10 +314,15 @@ SearchResult SearchMove(HashTable* table, const Board *board, int player, int ti
   SearchResult out;
   out.move = -1;
   Board copy = *board;
-  for (int depth = 2; depth <= DefaultMaxDepth(); depth += 1) {
+  auto start = steady_clock::now();
+  for (int depth = 2; depth <= MaxDepth; depth += 1) {
     SearchResult tmp;
     try {
       tmp = ai.SearchMove(&copy, player, ply, depth);
+      cerr << "Move: " << tmp.move << " Score: " << tmp.score << " Depth: " << depth << " Nodes: " << out.nodes << endl;
+      if (PonderMode) {
+        cerr << "Time: " << duration_cast<milliseconds>(steady_clock::now() - start).count() << endl;
+      }
     } catch (TimeLimitExceeded e) {
       cerr << "Search interrupted after reaching time limit of " << time_limit << " milliseconds" << endl;
       break;

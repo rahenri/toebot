@@ -5,13 +5,13 @@ OBJECTS = main.o test.o board.o util.o ai.o random.o hash.o search_tree_printer.
 
 test.o: util.h test.cpp
 
-main.o: util.h main.cpp board.h ai.h random.h score_table.h
+main.o: util.h main.cpp board.h ai.h random.h score_table.h flags.h
 
 board.o: board.cpp board.h
 
 util.o: util.cpp util.h
 
-ai.o: ai.cpp ai.h search_tree_printer.h board.h
+ai.o: ai.cpp ai.h search_tree_printer.h board.h flags.h
 
 hash.o: hash.cpp hash.h
 
