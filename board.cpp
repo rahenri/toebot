@@ -144,6 +144,7 @@ void Board::RegenState() {
 
   hash = HashBoard(this);
   this->done = (isDone(this->macrocells, 1) || isDone(macrocells, 2));
+  this->draw = isFull(this->macrocells);
 }
 
 void InitCaptureMoves() {

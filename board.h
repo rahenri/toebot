@@ -126,12 +126,7 @@ class Board {
   }
 
   inline bool IsDrawn() const {
-    for (int i = 0; i < 9; i++) {
-      if (macrocells[i] == 0) {
-        return false;
-      }
-    }
-    return true;
+    return draw;
   }
 
   void RegenState();
@@ -175,6 +170,7 @@ class Board {
       }
       if (next_macro == -1) {
         next_macro = 9;
+        draw = true;
       }
     }
 
@@ -193,6 +189,7 @@ class Board {
     hash = UpdateHash(hash, next_macro, tick_info, cell, player);
     next_macro = tick_info;
     done = false;
+    draw = false;
   }
 
   inline int ListCaptureMoves(uint8_t* moves, int player) {
@@ -287,6 +284,7 @@ class Board {
   uint64_t hash;
   uint32_t boards[9];
   bool done = false;
+  bool draw = false;
 };
 
 ostream& operator<<(ostream& stream, const Board& board);
