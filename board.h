@@ -10,6 +10,12 @@
 
 using namespace std;
 
+void InitBoardConstants();
+
+// Constants
+extern uint16_t captureMoveIndex[1<<18][2];
+extern int8_t captureMoveLookup[33270];
+
 inline bool isDone(const int8_t* cells, int8_t player) {
   return
     (((cells[0]==player) && (cells[1]==player) && (cells[2]==player))) ||
@@ -84,6 +90,12 @@ inline bool isFull(const int8_t* cells) {
     (cells[8]!=0);
 }
 
+inline void DecodeBoard(int8_t* board, uint32_t code) {
+  for (int i = 0; i < 9; i++) {
+    board[i] = (code >> (2 * i)) & 3;
+  }
+}
+
 class Board {
  public:
 
@@ -101,24 +113,19 @@ class Board {
   inline bool wouldBeDone(int cell, int player) const {
     int mcell = cell / 9;
     const int8_t* board = this->cells + (mcell*9);
-    int8_t copy[9];
-    for (int i = 0; i < 9; i++) {
-      copy[i] = board[i];
-    }
-    copy[cell%9] = player;
-    return isDoneWithCell(copy, cell, player);
+    return isDoneWithCell(board, cell, player);
   }
 
-  bool canTick(int cell) const {
+  inline bool canTick(int cell) const {
     int mcell = cell/9;
     return (next_macro == mcell || (next_macro == 9 && macrocells[mcell] == 0)) && (cells[cell] == 0);
   }
 
-  bool isOver() const {
+  inline bool isOver() const {
     return done;
   }
 
-  bool IsDrawn() const {
+  inline bool IsDrawn() const {
     for (int i = 0; i < 9; i++) {
       if (macrocells[i] == 0) {
         return false;
@@ -127,30 +134,20 @@ class Board {
     return true;
   }
 
-  void RecomputeMacroBoard() {
-    for (int i = 0; i < 9; ++i) {
-      const int8_t* b = cells + (i*9);
-      if (isDone(b, 1)) {
-        macrocells[i] = 1;
-      } else if (isDone(b, 2)) {
-        macrocells[i] = 2;
-      } else if (isFull(b))  {
-        macrocells[i] = 3;
-      } else {
-        macrocells[i] = 0;
-      }
-    }
-  }
+  void RegenState();
 
   int tick(int cell, int player) {
+    int mcell = cell/9;
+    int bcell = cell%9;
+
     cells[cell] = player;
+    boards[mcell] ^= player << (bcell * 2);
 
     int ret = next_macro;
 
     // Check if current macrocell is now taken.
-    int mcell = cell/9;
     const int8_t* b = cells + (mcell*9);
-    if (isDoneWithCell(b, cell%9, player)) {
+    if (isDoneWithCell(b, bcell, player)) {
       macrocells[mcell] = player;
       if (isDoneWithCell(macrocells, mcell, player)) {
         done = true;
@@ -161,7 +158,7 @@ class Board {
 
     // Update next macro cell if not taken. It is already taken, every not yet
     // taken macrocell is eligible for the next move.
-    mcell = cell % 9;
+    mcell = bcell;
     if (macrocells[mcell] == 0) {
       next_macro = mcell;
     } else {
@@ -188,8 +185,10 @@ class Board {
 
   void untick(int cell, int tick_info) {
     int mcell = cell/9;
+    int bcell = cell%9;
     int player = cells[cell];
     cells[cell] = 0;
+    boards[mcell] ^= player << (bcell * 2);
     macrocells[mcell] = 0;
     hash = UpdateHash(hash, next_macro, tick_info, cell, player);
     next_macro = tick_info;
@@ -199,13 +198,11 @@ class Board {
   inline int ListCaptureMoves(uint8_t* moves, int player) {
     int move_count = 0;
     if (next_macro != 9) {
-      int offset = next_macro*9;
-      for (int cell = offset; cell < offset+9; cell++) {
-        if (cells[cell] != 0) {
-          continue;
-        }
-        if (isDoneWithCell(cells+offset, cell-offset, player)) {
-          moves[move_count++] = cell;
+      auto offset = captureMoveIndex[boards[next_macro]][player-1];
+      if (offset != 0xffff) {
+        int k = next_macro * 9;
+        while (captureMoveLookup[offset]>=0) {
+          moves[move_count++] = captureMoveLookup[offset++] + k;
         }
       }
     } else {
@@ -213,13 +210,11 @@ class Board {
         if (macrocells[mcell] != 0) {
           continue;
         }
-        int offset = mcell*9;
-        for (int cell = offset; cell < offset+9; cell++) {
-          if (cells[cell] != 0) {
-            continue;
-          }
-          if (isDoneWithCell(cells+offset, cell-offset, player)) {
-            moves[move_count++] = cell;
+        auto offset = captureMoveIndex[boards[mcell]][player-1];
+        if (offset != 0xffff) {
+          int k = mcell * 9;
+          while (captureMoveLookup[offset]>=0) {
+            moves[move_count++] = captureMoveLookup[offset++] + k;
           }
         }
       }

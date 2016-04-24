@@ -186,9 +186,10 @@ void handleSelfPlay(HashTable* table) {
 
 int main() {
   RandSeed(duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count());
-  InitHashConstants();
 
+  InitHashConstants();
   InitScoreTable();
+  InitBoardConstants();
 
   string line;
   unique_ptr<Game> game(new Game);

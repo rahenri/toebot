@@ -6,6 +6,9 @@
 
 using namespace std;
 
+uint16_t captureMoveIndex[1<<18][2];
+int8_t captureMoveLookup[33270];
+
 bool Board::ParseBoard(const string& repr) {
   auto parts = parseCSV(repr);
   if (parts.size() != 9*9) {
@@ -18,9 +21,7 @@ bool Board::ParseBoard(const string& repr) {
       this->cells[encodeCell(i, j)] = stoi(parts[k]);
     }
   }
-  RecomputeMacroBoard();
-  hash = HashBoard(this);
-  this->done = (isDone(this->macrocells, 1) || isDone(macrocells, 2));
+  RegenState();
   return true;
 }
 
@@ -50,7 +51,7 @@ bool Board::ParseMacroBoard(const string& repr) {
   }
   // We don't update macroboard here, we can compute the rest from the board
   // itself.
-  hash = HashBoard(this);
+  RegenState();
   return true;
 }
 
@@ -119,4 +120,74 @@ bool Board::operator==(const Board& other) const {
     }
   }
   return true;
+}
+
+void Board::RegenState() {
+  for (int i = 0; i < 9; ++i) {
+    const int8_t* b = cells + (i*9);
+    if (isDone(b, 1)) {
+      macrocells[i] = 1;
+    } else if (isDone(b, 2)) {
+      macrocells[i] = 2;
+    } else if (isFull(b))  {
+      macrocells[i] = 3;
+    } else {
+      macrocells[i] = 0;
+    }
+    
+    boards[i] = 0;
+
+    for (int j = 0; j < 9; j++) {
+      boards[i] |= cells[j + i*9] << (j * 2);
+    }
+  }
+
+  hash = HashBoard(this);
+  this->done = (isDone(this->macrocells, 1) || isDone(macrocells, 2));
+}
+
+void InitCaptureMoves() {
+  int offset = 0;
+  for (int code = 0; code < (1 << 18); code++) {
+    int8_t board[9];
+    DecodeBoard(board, code);
+    if (isDone(board, 1) || isDone(board, 2) || isFull(board)) {
+      continue;
+    }
+    bool bad = false;
+    for (int cell = 0; cell < 9; cell++) {
+      if (board[cell] == 3) {
+        bad = true;
+      }
+    }
+    if (bad) {
+      continue;
+    }
+    for (int player = 1; player <= 2; player++) {
+      int8_t moves[9];
+      int count = 0;
+      for (int cell = 0; cell < 9; cell++) {
+        if (board[cell] != 0) {
+          continue;
+        }
+        if (isDoneWithCell(board, cell, player)) {
+          moves[count++] = cell;
+        }
+      }
+      if (count == 0) {
+        captureMoveIndex[code][player-1] = 0xffff;
+        continue;
+      }
+      captureMoveIndex[code][player-1] = offset;
+      for (int j = 0; j < count; j++) {
+        captureMoveLookup[offset++] = moves[j];
+      }
+      captureMoveLookup[offset++] = -1;
+    }
+  }
+  cerr << "Capture move lookup size: " << offset << endl;
+}
+
+void InitBoardConstants() {
+  InitCaptureMoves();
 }
