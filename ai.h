@@ -4,8 +4,6 @@
 #include "board.h"
 #include "hash_table.h"
 
-static const int MaxScore = 1000000;
-
 struct SearchResult {
   int move = 9*9+1;
   int score = 0;

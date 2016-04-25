@@ -17,6 +17,8 @@ void InitBoardConstants();
 extern uint16_t captureMoveIndex[1<<18][2];
 extern int8_t captureMoveLookup[33270];
 
+static const int MaxScore = 2000000000;
+
 inline bool isDone(const int8_t* cells, int8_t player) {
   return
     (((cells[0]==player) && (cells[1]==player) && (cells[2]==player))) ||
@@ -279,7 +281,12 @@ class Board {
   }
 
   inline int Eval(int player) {
-    int score = int(score_lookup_table[macroboard_code].score * 10000);
+    int score = int(macro_score_table[macroboard_code] * 10000);
+    double sum = 0;
+    for (int i = 0; i < 9; i++) {
+      sum += micro_score_table[boards_code[i]];
+    }
+    score = score * 10000 + int(sum * 1000);
     return (player == 1) ? score : -score;
   }
 

@@ -7,7 +7,7 @@
 
 struct BoardMemo {
   uint64_t hash = 0;
-  int lower_bound, upper_bound;
+  int32_t lower_bound, upper_bound;
   int depth;
   int move;
 };
