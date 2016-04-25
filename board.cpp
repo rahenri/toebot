@@ -134,11 +134,13 @@ void Board::RegenState() {
     } else {
       macrocells[i] = 0;
     }
+
+    macroboard_code |= macrocells[i] << (i * 2);
     
-    boards[i] = 0;
+    boards_code[i] = 0;
 
     for (int j = 0; j < 9; j++) {
-      boards[i] |= cells[j + i*9] << (j * 2);
+      boards_code[i] |= cells[j + i*9] << (j * 2);
     }
   }
 

@@ -7,7 +7,7 @@ test.o: util.h test.cpp
 
 main.o: util.h main.cpp board.h ai.h random.h score_table.h flags.h
 
-board.o: board.cpp board.h
+board.o: board.cpp board.h score_table.h
 
 util.o: util.cpp util.h
 

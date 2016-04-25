@@ -7,7 +7,6 @@
 #include "hash.h"
 #include "random.h"
 #include "search_tree_printer.h"
-#include "score_table.h"
 #include "flags.h"
 
 using namespace std::chrono;
@@ -15,15 +14,6 @@ using namespace std::chrono;
 static const int DrawPenalty = 50;
 
 static const int HashMinDepth = 2;
-
-int leafEval(const Board *board, int player) {
-  int code = 0;
-  for (int i = 8; i >= 0; i--) {
-    code = (code << 2) + board->MacroCell(i);
-  }
-  int score = (score_lookup_table[code].score * 10000);
-  return (player == 1) ? score : -score;
-}
 
 struct TimeLimitExceeded {
 };
@@ -189,7 +179,7 @@ struct AI {
       if (PrintSearchTree) {
         printer->Attr("leaf", true);
       }
-      best_score = leafEval(board, player);
+      best_score = board->Eval(player);
       if (best_score > beta) {
         return best_score;
       }

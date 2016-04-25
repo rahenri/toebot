@@ -6,6 +6,7 @@
 #include <cstdint>
 
 #include "util.h"
+#include "score_table.h"
 #include "hash.h"
 
 using namespace std;
@@ -102,7 +103,7 @@ class Board {
   Board() {
     for (int i = 0; i < 9; i++) {
       macrocells[i] = 0;
-      boards[i] = 0;
+      boards_code[i] = 0;
     }
     for (int i = 0; i < 9*9; i++) {
       cells[i] = 0;
@@ -129,14 +130,12 @@ class Board {
     return draw;
   }
 
-  void RegenState();
-
   int tick(int cell, int player) {
     int mcell = cell/9;
     int bcell = cell%9;
 
     cells[cell] = player;
-    boards[mcell] ^= player << (bcell * 2);
+    boards_code[mcell] ^= player << (bcell * 2);
 
     int ret = next_macro;
 
@@ -144,11 +143,13 @@ class Board {
     const int8_t* b = cells + (mcell*9);
     if (isDoneWithCell(b, bcell, player)) {
       macrocells[mcell] = player;
+      macroboard_code |= player << (mcell * 2);
       if (isDoneWithCell(macrocells, mcell, player)) {
         done = true;
       }
     }  else if(isFull(b)) {
       macrocells[mcell] = 3;
+      macroboard_code |= 3 << (mcell * 2);
     }
 
     // Update next macro cell if not taken. It is already taken, every not yet
@@ -184,7 +185,8 @@ class Board {
     int bcell = cell%9;
     int player = cells[cell];
     cells[cell] = 0;
-    boards[mcell] ^= player << (bcell * 2);
+    boards_code[mcell] ^= player << (bcell * 2);
+    macroboard_code ^= macrocells[mcell] << (mcell * 2);
     macrocells[mcell] = 0;
     hash = UpdateHash(hash, next_macro, tick_info, cell, player);
     next_macro = tick_info;
@@ -195,7 +197,7 @@ class Board {
   inline int ListCaptureMoves(uint8_t* moves, int player) {
     int move_count = 0;
     if (next_macro != 9) {
-      auto offset = captureMoveIndex[boards[next_macro]][player-1];
+      auto offset = captureMoveIndex[boards_code[next_macro]][player-1];
       if (offset != 0xffff) {
         int k = next_macro * 9;
         while (captureMoveLookup[offset]>=0) {
@@ -207,7 +209,7 @@ class Board {
         if (macrocells[mcell] != 0) {
           continue;
         }
-        auto offset = captureMoveIndex[boards[mcell]][player-1];
+        auto offset = captureMoveIndex[boards_code[mcell]][player-1];
         if (offset != 0xffff) {
           int k = mcell * 9;
           while (captureMoveLookup[offset]>=0) {
@@ -276,13 +278,24 @@ class Board {
     return hash;
   }
 
+  inline int Eval(int player) {
+    int score = int(score_lookup_table[macroboard_code].score * 10000);
+    return (player == 1) ? score : -score;
+  }
+
  private:
+
+  void RegenState();
 
   int8_t cells[9*9];
   int8_t macrocells[9];
   int8_t next_macro = 9;
   uint64_t hash;
-  uint32_t boards[9];
+
+  uint32_t boards_code[9];
+
+  uint32_t macroboard_code = 0;
+
   bool done = false;
   bool draw = false;
 };
