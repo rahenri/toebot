@@ -91,6 +91,5 @@ void InitScoreTable() {
   for (int i = (1<<18) - 1; i >= 0; i--) {
     macro_score_table[i] = ComputeMacroScore(i);
     micro_score_table[i] = ComputeMicroScore(i);
-    cerr << i << " " << micro_score_table[i] << endl;
   }
 }
