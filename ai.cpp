@@ -209,10 +209,10 @@ struct AI {
       int upper_bound = MaxScore;
       if (best_score > beta) {
         // It could be best_score instead of beta+1
-        lower_bound = beta+1;
+        lower_bound = best_score;
       } else if (best_score < alpha) {
         // It could be best_score instead of alpha-1
-        upper_bound = alpha-1;
+        upper_bound = best_score;
       } else {
         lower_bound = upper_bound = best_score;
       }
@@ -242,14 +242,12 @@ struct AI {
     int alternative_count = 0;
 
     int first_cell = -1;
-    if (!PonderMode) {
-      auto memo = this->table->Get(board);
-      if (memo != nullptr) {
-        first_cell = memo->move;
-      }
+    auto memo = this->table->Get(board);
+    if (memo != nullptr) {
+      first_cell = memo->move;
     }
 
-    if (PonderMode) {
+    if (AnalysisMode) {
       cerr << "-------------------------------" << endl;
       cerr << "Depth: " << depth << endl;
     }
@@ -261,9 +259,9 @@ struct AI {
       int cell = moves[i];
 
       auto tick_info = board->tick(cell, player);
-      int beta = PonderMode ? MaxScore : -out.score;
+      int beta = AnalysisMode ? MaxScore : -out.score;
       int score = -this->DeepEvalRec(board, 3-player, ply+1, depth-1, -MaxScore, beta);
-      if (PonderMode) {
+      if (AnalysisMode) {
         cerr << cell << ": " << score << endl;
       }
       board->untick(cell, tick_info);
@@ -315,8 +313,8 @@ SearchResult SearchMove(HashTable* table, const Board *board, int player, int ti
     SearchResult tmp;
     try {
       tmp = ai.SearchMove(&copy, player, ply, depth);
-      cerr << "Move: " << tmp.move << " Score: " << tmp.score << " Depth: " << depth << " Nodes: " << out.nodes << endl;
-      if (PonderMode) {
+      cerr << "Move: " << tmp.move << " Score: " << tmp.score << " Depth: " << depth << " Nodes: " << tmp.nodes << endl;
+      if (AnalysisMode) {
         cerr << "Time: " << duration_cast<milliseconds>(steady_clock::now() - start).count() << endl;
       }
     } catch (TimeLimitExceeded e) {

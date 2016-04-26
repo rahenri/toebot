@@ -109,6 +109,7 @@ struct Game {
     if (args.size() >= 2) {
       time_limit = min(stoi(args[1]) - 50, DefaultTimeLimit);
     }
+    time_limit = max(time_limit, MinTimeLimit);
     SearchResult result = bestCell(table, time_limit);
     if (result.move == -1) {
       cerr << "No cell available" << endl;
@@ -159,7 +160,7 @@ void handleSelfPlay(HashTable* table) {
       cerr << "Draw" << endl;
       break;
     }
-    SearchResult result = SearchMove(table, &board, player, DefaultTimeLimit);
+    SearchResult result = SearchMove(table, &board, player, max(MinTimeLimit, DefaultTimeLimit));
     if (result.move == -1) {
       cerr << "No move found!" << endl;
       break;
@@ -173,7 +174,7 @@ void handleSelfPlay(HashTable* table) {
     decodeCell(result.move, row, col);
     auto time_span = duration_cast<duration<double>>(steady_clock::now() - t1);
     cout << "place_move " << col << " " << row << endl;
-    cerr << "Move Score: " << result.score << ", Nodes: " << result.nodes << ", Depth: " << result.depth << " Time: " << time_span.count() << endl;
+    cerr << "Move Score: " << result.score << ", Nodes: " << result.nodes << ", Depth: " << result.depth << " Time: " << time_span.count() << " seconds" << endl;
     cerr << board;
     cerr << board.BoardRepr() << endl;
     cerr << board.MacroBoardRepr() << endl;
@@ -194,7 +195,7 @@ int main() {
   string line;
   unique_ptr<Game> game(new Game);
 
-  HashTable table(PonderMode ? 400000009 : 50000017);
+  HashTable table(AnalysisMode ? 400000009 : 50000017);
 
   while (getline(cin, line)) {
     steady_clock::time_point t1 = steady_clock::now();
@@ -206,7 +207,7 @@ int main() {
     vector<string> args = sliceVector(command, 1);
     bool success = true;
     if (name == "action") {
-      game->handleAction(&table, args);
+      success = game->handleAction(&table, args);
     } else if (name == "settings") {
       game->settings.update(args);
     } else if (name == "update") {
@@ -228,13 +229,14 @@ int main() {
         cerr << game->board;
       }
 
-      game->handleAction(&table, {"move", "800"});
+      success = game->handleAction(&table, {"move", "800"});
     } else if (name == "self_play") {
       handleSelfPlay(&table);
     } else if (name == "list_moves") {
       game->handleListMoves();
     } else {
       cerr << "Unknown command: " << name << endl;
+      success = false;
     }
     if (!success) {
       cerr << "Command failed: " << line << endl;
