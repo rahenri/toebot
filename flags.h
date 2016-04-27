@@ -46,7 +46,7 @@ static const bool PrintSearchTree = false;
 static const bool AnalysisMode = false;
 static const int DefaultTimeLimit = 800;
 static const int MaxDepth = 50;
-static const int MinTimeLimie = 0;
+static const int MinTimeLimit = 0;
 
 #endif
 
