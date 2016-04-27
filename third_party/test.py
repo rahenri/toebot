@@ -37,7 +37,10 @@ def main(args):
       raise RuntimeError('Unexpected result value: "{}"'.format(result))
 
     # print summary
-    print 'Base({}):{} Test({}):{} Draws:{} Total:{} Ratio:{:.2f}%'.format(bot_names[0], base, bot_names[1], test, draws, base+test+draws, float(test)/float(test+base)*100)
+    ratio = 0
+    if base>0 or test>0:
+      ratio = float(test) / float(test + base)
+    print 'Base({}):{} Test({}):{} Draws:{} Total:{} Ratio:{:.2f}%'.format(bot_names[0], base, bot_names[1], test, draws, base+test+draws, ratio*100)
 
     sys.stdout.flush()
 

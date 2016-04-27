@@ -283,12 +283,23 @@ class Board {
   }
 
   inline int Eval(int player) {
-    int score = int(macro_score_table[macroboard_code] * 10000);
+    // double base = macro_score_table[macroboard_code];
+    int score = 0;
+    // score += int(base * 10000);
     double sum = 0;
     for (int i = 0; i < 9; i++) {
-      sum += micro_score_table[boards_code[i]] * MacroCellWeight[i];
+      if (macrocells[i] != 0) {
+        continue;
+      }
+      double wp = micro_win_prob[boards_code[i]];
+      double lp = micro_lose_prob[boards_code[i]];
+      double dp = 1.0 - wp - lp;
+      sum += (
+          wp * macro_score_table[macroboard_code | (1 << (i * 2))] +
+          lp * macro_score_table[macroboard_code | (2 << (i * 2))] +
+          dp * macro_score_table[macroboard_code | (3 << (i * 2))]);
     }
-    score = score * 10000 + int(sum * 1000);
+    score = score * 10000 + int(sum * 100000);
     return (player == 1) ? score : -score;
   }
 
