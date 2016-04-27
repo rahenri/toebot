@@ -100,7 +100,7 @@ struct Game {
 
   SearchResult bestCell(HashTable* table, int time_limit) {
     SearchResult result = SearchMove(table, &board, settings.my_id, time_limit);
-    board.tick(result.move, settings.my_id);
+    board.tick(result.RandomMove(), settings.my_id);
     return result;
   }
 
@@ -111,17 +111,18 @@ struct Game {
     }
     time_limit = max(time_limit, MinTimeLimit);
     SearchResult result = bestCell(table, time_limit);
-    if (result.move == -1) {
+    if (result.move_count == 0) {
       cerr << "No cell available" << endl;
       return false;
     }
-    board.tick(result.move, settings.my_id);
-    cerr << "Move Score: " << result.score << ", Nodes: " << result.nodes << " Depth: " << result.depth << " Move: " << result.move << endl;
+    int move = result.RandomMove();
+    board.tick(move, settings.my_id);
+    cerr << "Move Score: " << result.score << ", Nodes: " << result.nodes << " Depth: " << result.depth << " Move: " << move << endl;
     cerr << board;
     cerr << board.BoardRepr() << endl;
     cerr << board.MacroBoardRepr() << endl;
     int row, col;
-    decodeCell(result.move, row, col);
+    decodeCell(move, row, col);
     cout << "place_move " << col << " " << row << endl;
     return true;
   }
@@ -161,20 +162,21 @@ void handleSelfPlay(HashTable* table) {
       break;
     }
     SearchResult result = SearchMove(table, &board, player, max(MinTimeLimit, DefaultTimeLimit));
-    if (result.move == -1) {
+    if (result.move_count == 0) {
       cerr << "No move found!" << endl;
       break;
     }
-    if (result.move >= 9*9 || !board.canTick(result.move)) {
-      cerr << "Bot produced invalid move: " << result.move << endl;
+    int move = result.RandomMove();
+    if (move >= 9*9 || !board.canTick(move)) {
+      cerr << "Bot produced invalid move: " << move << endl;
       break;
     }
-    board.tick(result.move, player);
+    board.tick(move, player);
     int row, col;
-    decodeCell(result.move, row, col);
+    decodeCell(move, row, col);
     auto time_span = duration_cast<duration<double>>(steady_clock::now() - t1);
     cout << "place_move " << col << " " << row << endl;
-    cerr << "Move Score: " << result.score << ", Nodes: " << result.nodes << ", Depth: " << result.depth << " Time: " << time_span.count() << " seconds" << endl;
+    cerr << result << " Time: " << time_span.count() << " seconds" << endl;
     cerr << board;
     cerr << board.BoardRepr() << endl;
     cerr << board.MacroBoardRepr() << endl;
@@ -186,7 +188,7 @@ void handleSelfPlay(HashTable* table) {
 }
 
 int main() {
-  RandSeed(duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count());
+  RandSeed(PlayDeterministic ? 0 : duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count());
 
   InitHashConstants();
   InitScoreTable();

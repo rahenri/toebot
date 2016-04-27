@@ -99,6 +99,8 @@ inline void DecodeBoard(int8_t* board, uint32_t code) {
   }
 }
 
+static const int MacroCellWeight[9] = {3, 2, 3, 2, 4, 2, 3, 2, 3};
+
 class Board {
  public:
 
@@ -284,7 +286,7 @@ class Board {
     int score = int(macro_score_table[macroboard_code] * 10000);
     double sum = 0;
     for (int i = 0; i < 9; i++) {
-      sum += micro_score_table[boards_code[i]];
+      sum += micro_score_table[boards_code[i]] * MacroCellWeight[i];
     }
     score = score * 10000 + int(sum * 1000);
     return (player == 1) ? score : -score;

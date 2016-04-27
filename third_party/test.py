@@ -7,70 +7,79 @@ import random
 import multiprocessing
 from subprocess import Popen, PIPE, STDOUT
 
+bot_stderr = None
 
 def main(args):
 
   bot_names = [args.bots[0], args.bots[1]]
-  accounting = {
-      'Draw': 0,
-      bot_names[0]: 0,
-      bot_names[1]: 0,
-  }
+  draws = 0
+  base = 0
+  test = 0
 
   pairs = []
+  pair = list(bot_names)
   for i in range(args.count):
-    pairs.append(list(bot_names))
-    bot_names.reverse()
+    pairs.append(list(pair))
+    pair.reverse()
 
   pool = multiprocessing.Pool(processes=args.workers) 
 
-  for result in pool.imap(OneRound, pairs):
-    accounting[result] += 1
+  for result in pool.imap_unordered(OneRound, pairs, 1):
+    if result == 'Draw':
+      draws += 1
+    elif result == bot_names[0]:
+      base += 1
+    elif result == bot_names[1]:
+      test += 1
+    elif result is Exception:
+      raise result
+    else:
+      raise RuntimeError('Unexpected result value: "{}"'.format(result))
 
     # print summary
-    elements = []
-    for k in sorted(accounting.keys()):
-      elements.append('"{}":{}'.format(k, accounting[k]))
-    print ' '.join(elements)
+    print 'Base({}):{} Test({}):{} Draws:{} Total:{} Ratio:{:.2f}%'.format(bot_names[0], base, bot_names[1], test, draws, base+test+draws, float(test)/float(test+base)*100)
 
     sys.stdout.flush()
 
 
 def OneRound(bot_names):
-  # Get robots who are fighting (player1, player2)
-  bots = get_bots(bot_names[0], bot_names[1])
+  try:
+    # Get robots who are fighting (player1, player2)
+    bots = get_bots(bot_names[0], bot_names[1])
 
-  # Simulate game init input
-  send_init('1', bots[0], args.time_per_move)
-  send_init('2', bots[1], args.time_per_move)
-  round_num = 1
-  move = 1
-  field = ','.join(['0'] * 81)
-  macroboard = ','.join(['-1'] * 9)
-  turn = 0
-  result = ''
-  while True:
-    bot = bots[turn]
-    bot_id = turn+1
-    # Send inputs to bot
-    move = send_update(bot, round_num, move, field, macroboard, args.time_per_move)
-    # Update macroboard and game field
-    field = update_field(field, move, str(bot_id))
-    macroboard = update_macroboard(field, move)
-    # Check for winner. If winner, exit.
-    if is_winner(macroboard):
-      result = bot_names[turn]
-      break
+    # Simulate game init input
+    send_init('1', bots[0], args.time_per_move)
+    send_init('2', bots[1], args.time_per_move)
+    round_num = 1
+    move = 1
+    field = ','.join(['0'] * 81)
+    macroboard = ','.join(['-1'] * 9)
+    turn = 0
+    result = ''
+    while True:
+      bot = bots[turn]
+      bot_id = turn+1
+      # Send inputs to bot
+      move = send_update(bot, round_num, move, field, macroboard, args.time_per_move)
+      # Update macroboard and game field
+      field = update_field(field, move, str(bot_id))
+      macroboard = update_macroboard(field, move)
+      # Check for winner. If winner, exit.
+      if is_winner(macroboard):
+        result = bot_names[turn]
+        break
 
-    if is_draw(macroboard):
-      result = 'Draw'
-      break
+      if is_draw(macroboard):
+        result = 'Draw'
+        break
 
-    round_num += 1
-    turn = 1-turn
-
-  for b in bots:
-    b.stdin.close()
+      round_num += 1
+      turn = 1-turn
+  except exp:
+    return exp
+  finally:
+    for b in bots:
+      b.stdin.close()
 
   return result
 

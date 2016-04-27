@@ -67,7 +67,7 @@ SearchTreePrinter* tree_printer() {
 }
 
 struct AI {
-  int nodes = 0;
+  int64_t nodes = 0;
   int time_limit = 0;
   int deadline_counter = 0;
   int initial_player = 0;
@@ -234,12 +234,9 @@ struct AI {
     SearchResult out;
     out.score = -MaxScore;
     out.depth = depth;
-    out.move = -1;
+    out.move_count = 0;
 
     this->nodes++;
-
-    int alternatives[9*9];
-    int alternative_count = 0;
 
     int first_cell = -1;
     auto memo = this->table->Get(board);
@@ -265,29 +262,18 @@ struct AI {
         cerr << cell << ": " << score << endl;
       }
       board->untick(cell, tick_info);
-      if (score > out.score || out.move == -1) {
+      if (score > out.score || out.move_count == 0) {
         out.score = score;
-        out.move = cell;
-        alternatives[0] = cell;
-        alternative_count = 1;
+        out.moves[0] = cell;
+        out.move_count = 1;
       } else if (score == out.score) {
-        alternatives[alternative_count] = cell;
-        alternative_count++;
+        out.moves[out.move_count++] = cell;
       }
     }
-    this->table->Insert(board, out.score, out.score, depth, out.move);
-
-    if (PlayDeterministic) {
-      if (alternative_count > 0) {
-        out.move = *min_element(alternatives, alternatives+alternative_count);
-      }
-    } else {
-      if (alternative_count > 1) {
-        out.move = alternatives[RandN(alternative_count)];
-      }
-    }
+    this->table->Insert(board, out.score, out.score, depth, out.moves[0]);
 
     out.nodes = nodes;
+    sort(out.moves, out.moves+out.move_count);
 
     if (PrintSearchTree) {
       printer->Pop();
@@ -295,6 +281,22 @@ struct AI {
     return out;
   }
 };
+
+std::ostream& operator<<(std::ostream& stream, const SearchResult& res) {
+  stream << "Move: [";
+  for (int i = 0; i < res.move_count; i++) {
+    if (i > 0) {
+      stream << ", ";
+    }
+    stream << res.moves[i];
+  }
+  stream << "] Score: " << res.score << " Depth: " << res.depth << " Nodes: " << res.nodes;
+  return stream;
+}
+
+int SearchResult::RandomMove() const {
+  return moves[RandN(move_count)];
+}
 
 SearchResult SearchMove(HashTable* table, const Board *board, int player, int time_limit) {
   int ply = 1;
@@ -306,17 +308,18 @@ SearchResult SearchMove(HashTable* table, const Board *board, int player, int ti
 
   AI ai(table, time_limit);
   SearchResult out;
-  out.move = -1;
+  out.move_count = 0;
   Board copy = *board;
   auto start = steady_clock::now();
   for (int depth = 2; depth <= MaxDepth; depth += 1) {
     SearchResult tmp;
     try {
       tmp = ai.SearchMove(&copy, player, ply, depth);
-      cerr << "Move: " << tmp.move << " Score: " << tmp.score << " Depth: " << depth << " Nodes: " << tmp.nodes << endl;
+      cerr << tmp;
       if (AnalysisMode) {
-        cerr << "Time: " << duration_cast<milliseconds>(steady_clock::now() - start).count() << endl;
+        cerr << " Time: " << duration_cast<milliseconds>(steady_clock::now() - start).count();
       }
+      cerr << endl;
     } catch (TimeLimitExceeded e) {
       cerr << "Search interrupted after reaching time limit of " << time_limit << " milliseconds" << endl;
       break;
