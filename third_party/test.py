@@ -5,6 +5,7 @@ import sys
 import argparse
 import random
 import multiprocessing
+import logging
 from subprocess import Popen, PIPE, STDOUT
 
 bot_stderr = None
@@ -31,8 +32,6 @@ def main(args):
       base += 1
     elif result == bot_names[1]:
       test += 1
-    elif result is Exception:
-      raise result
     else:
       raise RuntimeError('Unexpected result value: "{}"'.format(result))
 
@@ -78,8 +77,11 @@ def OneRound(bot_names):
 
       round_num += 1
       turn = 1-turn
-  except exp:
-    return exp
+  except KeyboardInterrupt as exp:
+    raise RuntimeError("Keyboard Interrupt in child")
+  except Exception as exp:
+    logging.error(exp)
+    raise
   finally:
     for b in bots:
       b.stdin.close()
