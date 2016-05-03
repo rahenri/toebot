@@ -16,7 +16,7 @@ struct SearchResult {
   int RandomMove() const;
 };
 
-SearchResult SearchMove(HashTable* table, const Board *board, int player, int time_limit);
+SearchResult SearchMove(HashTable* table, const Board *board, int player, int time_limit, bool use_open_table = true);
 
 std::ostream& operator<<(std::ostream&, const SearchResult&);
 

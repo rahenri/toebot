@@ -8,6 +8,7 @@
 #include "random.h"
 #include "search_tree_printer.h"
 #include "flags.h"
+#include "generated_opening_table.h"
 
 using namespace std::chrono;
 
@@ -298,7 +299,7 @@ int SearchResult::RandomMove() const {
   return moves[RandN(move_count)];
 }
 
-SearchResult SearchMove(HashTable* table, const Board *board, int player, int time_limit) {
+SearchResult SearchMove(HashTable* table, const Board *board, int player, int time_limit, bool use_open_table) {
   int ply = 1;
   for (int i = 0; i < 9*9; i++) {
     if (board->Cell(i) != 0) {
@@ -306,8 +307,24 @@ SearchResult SearchMove(HashTable* table, const Board *board, int player, int ti
     }
   }
 
-  AI ai(table, time_limit);
   SearchResult out;
+
+  // Lookup opening table;
+  if (use_open_table) {
+    auto it = GeneratedOpeningTable.find(board->Hash());
+    if (it != GeneratedOpeningTable.end()) {
+      out.nodes = 0;
+      out.depth = 0;
+      out.score = 0;
+      out.move_count = it->second.size();
+      for (int i = 0; i < out.move_count; i++) {
+        out.moves[i] = it->second[i];
+      }
+      return out;
+    }
+  }
+
+  AI ai(table, time_limit);
   out.move_count = 0;
   Board copy = *board;
   auto start = steady_clock::now();

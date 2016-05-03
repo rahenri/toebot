@@ -10,6 +10,7 @@
 #include "random.h"
 #include "score_table.h"
 #include "flags.h"
+#include "opening_table.h"
 
 using namespace std;
 using namespace std::chrono;
@@ -236,6 +237,8 @@ int main() {
       handleSelfPlay(&table);
     } else if (name == "list_moves") {
       game->handleListMoves();
+    } else if (name == "gen_opening") {
+      GenOpeningTable(&table);
     } else {
       cerr << "Unknown command: " << name << endl;
       success = false;

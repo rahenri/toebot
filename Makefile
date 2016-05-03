@@ -1,7 +1,7 @@
 all: toebot
 CXXFLAGS=-Wall -O3 --std=c++1y -Werror -ggdb3 -D_LOCAL
 
-OBJECTS = main.o test.o board.o util.o ai.o random.o hash.o search_tree_printer.o hash_table.o score_table.o
+OBJECTS = main.o test.o board.o util.o ai.o random.o hash.o search_tree_printer.o hash_table.o score_table.o opening_table.o
 
 test.o: util.h test.cpp
 
@@ -20,6 +20,8 @@ search_tree_printer.o: search_tree_printer.cpp search_tree_printer.h board.h has
 hash_table.o: hash_table.cpp hash_table.h
 
 score_table.o: score_table.cpp score_table.h board.h
+
+opening_table.o: opening_table.h opening_table.cpp
 
 toebot: $(OBJECTS)
 	g++ $(OBJECTS) $(LDLIBS) -O3 -o toebot
