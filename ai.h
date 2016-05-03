@@ -12,11 +12,20 @@ struct SearchResult {
   int score = 0;
   int64_t nodes = 0;
   int depth = 0;
+  bool time_limit_exceeded = false;
+  bool manual_interruption = false;
 
   int RandomMove() const;
 };
 
-SearchResult SearchMove(HashTable* table, const Board *board, int player, int time_limit, bool use_open_table = true);
+
+struct SearchOptions {
+  bool use_open_table = true;
+  bool interruptable = false;
+  int time_limit = 100;
+};
+
+SearchResult SearchMove(HashTable* table, const Board *board, int player, SearchOptions opt = SearchOptions());
 
 std::ostream& operator<<(std::ostream&, const SearchResult&);
 

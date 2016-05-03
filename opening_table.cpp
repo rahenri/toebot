@@ -34,7 +34,10 @@ struct OpeningGenerator {
       return;
     }
 
-    auto result = SearchMove(table, board, player, 5000, false);
+    SearchOptions opt;
+    opt.time_limit = 5000; // 5s
+    opt.use_open_table = false;
+    auto result = SearchMove(table, board, player, opt);
 
     output << "  {0x" << hex << board->Hash() << ", " << "{";
     for (int i = 0; i < result.move_count; i++) {

@@ -1,16 +1,19 @@
+#include <chrono>
+#include <cstring>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <vector>
-#include <chrono>
-#include <memory>
 
-#include "util.h"
-#include "board.h"
 #include "ai.h"
+#include "board.h"
+#include "flags.h"
+#include "interruption.h"
+#include "line_reader.h"
+#include "opening_table.h"
 #include "random.h"
 #include "score_table.h"
-#include "flags.h"
-#include "opening_table.h"
+#include "util.h"
 
 using namespace std;
 using namespace std::chrono;
@@ -99,19 +102,15 @@ struct Game {
     return true;
   }
 
-  SearchResult bestCell(HashTable* table, int time_limit) {
-    SearchResult result = SearchMove(table, &board, settings.my_id, time_limit);
-    board.tick(result.RandomMove(), settings.my_id);
-    return result;
-  }
-
   bool handleAction(HashTable* table, const vector<string>& args) {
     int time_limit = DefaultTimeLimit;
     if (args.size() >= 2) {
       time_limit = min(stoi(args[1]) - 50, DefaultTimeLimit);
     }
     time_limit = max(time_limit, MinTimeLimit);
-    SearchResult result = bestCell(table, time_limit);
+    SearchOptions opt;
+    opt.time_limit = time_limit;
+    SearchResult result = SearchMove(table, &board, settings.my_id, opt);
     if (result.move_count == 0) {
       cerr << "No cell available" << endl;
       return false;
@@ -124,7 +123,7 @@ struct Game {
     cerr << board.MacroBoardRepr() << endl;
     int row, col;
     decodeCell(move, row, col);
-    cout << "place_move " << col << " " << row << endl;
+    cout << "place_move " << col << " " << row << endl << flush;
     return true;
   }
 
@@ -144,6 +143,16 @@ struct Game {
       }
     }
   }
+
+  void Ponder(HashTable* table) {
+    cerr << "Start pondering" << endl;
+    // Ponder for up to 10 minutes.
+    SearchOptions opt;
+    opt.interruptable = true;
+    opt.time_limit = 60000; // 10 min
+    SearchMove(table, &board, 3-settings.my_id, opt);
+    cerr << "End pondering" << endl;
+  }
 };
 
 bool RunTests();
@@ -162,7 +171,12 @@ void handleSelfPlay(HashTable* table) {
       cerr << "Draw" << endl;
       break;
     }
-    SearchResult result = SearchMove(table, &board, player, max(MinTimeLimit, DefaultTimeLimit));
+    SearchOptions opt;
+    opt.time_limit = max(MinTimeLimit, DefaultTimeLimit);
+    SearchResult result = SearchMove(table, &board, player, opt);
+    if (result.manual_interruption) {
+      break;
+    }
     if (result.move_count == 0) {
       cerr << "No move found!" << endl;
       break;
@@ -191,6 +205,7 @@ void handleSelfPlay(HashTable* table) {
 int main() {
   RandSeed(PlayDeterministic ? 0 : duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count());
 
+  InitSignals();
   InitHashConstants();
   InitScoreTable();
   InitBoardConstants();
@@ -200,7 +215,23 @@ int main() {
 
   HashTable table(AnalysisMode ? 400000009 : 50000017);
 
-  while (getline(cin, line)) {
+  LineReader* reader = &LineReaderSingleton;
+
+  while (1) {
+    int ret = reader->ReadLine(&line);
+    if (ret == 0) {
+      cerr << "EOF, goodbye" << endl;
+      break;
+    }
+    if (ret < 0) {
+      if (InterruptRequested()) {
+        cerr << "Interruption requested, goodbye" << endl;
+        break;
+      }
+      cerr << "IO interrupted by signal" << endl;
+      continue;
+    }
+
     steady_clock::time_point t1 = steady_clock::now();
     vector<string> command = parseLine(line);
     if (command.size() == 0) {
@@ -211,6 +242,10 @@ int main() {
     bool success = true;
     if (name == "action") {
       success = game->handleAction(&table, args);
+      // Ponder
+      if (EnablePonder) {
+        game->Ponder(&table);
+      }
     } else if (name == "settings") {
       game->settings.update(args);
     } else if (name == "update") {
@@ -231,8 +266,6 @@ int main() {
       } else {
         cerr << game->board;
       }
-
-      success = game->handleAction(&table, {"move", "800"});
     } else if (name == "self_play") {
       handleSelfPlay(&table);
     } else if (name == "list_moves") {

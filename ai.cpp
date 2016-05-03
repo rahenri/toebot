@@ -4,11 +4,14 @@
 #include <memory>
 
 #include "ai.h"
+#include "flags.h"
 #include "hash.h"
+#include "interruption.h"
 #include "random.h"
 #include "search_tree_printer.h"
 #include "flags.h"
 #include "generated_opening_table.h"
+#include "line_reader.h"
 
 using namespace std::chrono;
 
@@ -17,6 +20,9 @@ static const int DrawPenalty = 50;
 static const int HashMinDepth = 2;
 
 struct TimeLimitExceeded {
+};
+
+struct InterrutionRequestedException {
 };
 
 struct MoveInfo {
@@ -75,10 +81,11 @@ struct AI {
   steady_clock::time_point deadline;
   bool has_deadline;
   HashTable* table;
+  bool interruptable;
 
   SearchTreePrinter* printer;
 
-  AI(HashTable* table, int time_limit) : table(table) {
+  AI(HashTable* table, int time_limit, bool interruptable) : table(table), interruptable(interruptable) {
     if (time_limit == 0 || PlayDeterministic) {
       this->has_deadline = false;
     } else {
@@ -92,17 +99,24 @@ struct AI {
     }
   }
 
-  void checkDeadline() {
-    if (!this->has_deadline) {
-      return;
-    }
+  void checkInterruption() {
     this->deadline_counter++;
     if (this->deadline_counter % (1<<14) != 0) {
       return;
     }
-    auto now = steady_clock::now();
-    if (now >= this->deadline) {
-      throw TimeLimitExceeded();
+    if (InterruptRequested()) {
+      throw InterrutionRequestedException();
+    }
+    if (interruptable) {
+      if (EnablePonder && LineReaderSingleton.HasData()) {
+        throw InterrutionRequestedException();
+      }
+    }
+    if (this->has_deadline) {
+      auto now = steady_clock::now();
+      if (now >= this->deadline) {
+        throw TimeLimitExceeded();
+      }
     }
   }
 
@@ -127,7 +141,7 @@ struct AI {
 
   inline int DeepEval(Board *board, int player, int ply, int depth, int alpha, int beta) {
     this->nodes++;
-    this->checkDeadline();
+    this->checkInterruption();
 
     if (board->isOver()) {
       return -MaxScore + ply;
@@ -299,7 +313,7 @@ int SearchResult::RandomMove() const {
   return moves[RandN(move_count)];
 }
 
-SearchResult SearchMove(HashTable* table, const Board *board, int player, int time_limit, bool use_open_table) {
+SearchResult SearchMove(HashTable* table, const Board *board, int player, SearchOptions opt) {
   int ply = 1;
   for (int i = 0; i < 9*9; i++) {
     if (board->Cell(i) != 0) {
@@ -310,7 +324,7 @@ SearchResult SearchMove(HashTable* table, const Board *board, int player, int ti
   SearchResult out;
 
   // Lookup opening table;
-  if (use_open_table) {
+  if (opt.use_open_table) {
     auto it = GeneratedOpeningTable.find(board->Hash());
     if (it != GeneratedOpeningTable.end()) {
       out.nodes = 0;
@@ -324,23 +338,28 @@ SearchResult SearchMove(HashTable* table, const Board *board, int player, int ti
     }
   }
 
-  AI ai(table, time_limit);
+  AI ai(table, opt.time_limit, opt.interruptable);
   out.move_count = 0;
-  Board copy = *board;
   auto start = steady_clock::now();
   for (int depth = 2; depth <= MaxDepth; depth += 1) {
     SearchResult tmp;
+    Board copy = *board;
     try {
       tmp = ai.SearchMove(&copy, player, ply, depth);
-      cerr << tmp;
-      if (AnalysisMode) {
-        cerr << " Time: " << duration_cast<milliseconds>(steady_clock::now() - start).count();
-      }
-      cerr << endl;
     } catch (TimeLimitExceeded e) {
-      cerr << "Search interrupted after reaching time limit of " << time_limit << " milliseconds" << endl;
+      cerr << "Search interrupted after reaching time limit of " << opt.time_limit << " milliseconds" << endl;
+      out.time_limit_exceeded = true;
+      break;
+    } catch (InterrutionRequestedException e) {
+      cerr << "Search manually interrupted" << endl;
+      out.manual_interruption = true;
       break;
     }
+    cerr << tmp;
+    if (AnalysisMode) {
+      cerr << " Time: " << duration_cast<milliseconds>(steady_clock::now() - start).count();
+    }
+    cerr << endl;
     out = tmp;
   }
   return out;
