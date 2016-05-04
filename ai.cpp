@@ -107,8 +107,8 @@ struct AI {
     if (InterruptRequested()) {
       throw InterrutionRequestedException();
     }
-    if (interruptable) {
-      if (EnablePonder && LineReaderSingleton.HasData()) {
+    if (EnablePonder && interruptable) {
+      if (LineReaderSingleton.HasData()) {
         throw InterrutionRequestedException();
       }
     }
@@ -324,7 +324,7 @@ SearchResult SearchMove(HashTable* table, const Board *board, int player, Search
   SearchResult out;
 
   // Lookup opening table;
-  if (opt.use_open_table) {
+  if (opt.use_open_table && EnableOpeningTable) {
     auto it = GeneratedOpeningTable.find(board->Hash());
     if (it != GeneratedOpeningTable.end()) {
       out.nodes = 0;

@@ -19,6 +19,17 @@ extern int8_t captureMoveLookup[33270];
 
 static const int MaxScore = 2000000000;
 
+static const int8_t WinLines[][3] = {
+  {0, 1, 2},
+  {3, 4, 5},
+  {6, 7, 8},
+  {0, 3, 6},
+  {1, 4, 7},
+  {2, 5, 8},
+  {0, 4, 8},
+  {2, 4, 6},
+};
+
 inline bool isDone(const int8_t* cells, int8_t player) {
   return
     (((cells[0]==player) && (cells[1]==player) && (cells[2]==player))) ||
@@ -30,6 +41,7 @@ inline bool isDone(const int8_t* cells, int8_t player) {
     (((cells[0]==player) && (cells[4]==player) && (cells[8]==player))) ||
     (((cells[2]==player) && (cells[4]==player) && (cells[6]==player)));
 }
+
 
 inline bool isDoneWithCell(const int8_t* cells, int cell, int8_t player) {
   switch(cell) {
@@ -283,23 +295,13 @@ class Board {
   }
 
   inline int Eval(int player) {
-    // double base = macro_score_table[macroboard_code];
-    int score = 0;
-    // score += int(base * 10000);
     double sum = 0;
-    for (int i = 0; i < 9; i++) {
-      if (macrocells[i] != 0) {
-        continue;
-      }
-      double wp = micro_win_prob[boards_code[i]];
-      double lp = micro_lose_prob[boards_code[i]];
-      double dp = 1.0 - wp - lp;
-      sum += (
-          wp * macro_score_table[macroboard_code | (1 << (i * 2))] +
-          lp * macro_score_table[macroboard_code | (2 << (i * 2))] +
-          dp * macro_score_table[macroboard_code | (3 << (i * 2))]);
+
+    for (const auto& line : WinLines) {
+      sum += (micro_win_prob[boards_code[line[0]]] * micro_win_prob[boards_code[line[1]]] * micro_win_prob[boards_code[line[2]]])
+        - (micro_lose_prob[boards_code[line[0]]] * micro_lose_prob[boards_code[line[1]]] * micro_lose_prob[boards_code[line[2]]]);
     }
-    score = score * 10000 + int(sum * 100000);
+    int score = sum * 100000;
     return (player == 1) ? score : -score;
   }
 

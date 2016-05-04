@@ -9,6 +9,9 @@ static const bool EnablePonder = false;
 
 #ifdef _LOCAL
 
+// Disable opening table when running locally.
+static const bool EnableOpeningTable = false;
+
 #ifdef _DETERMINISTIC
 static const bool PlayDeterministic = true;
 static const bool PrintSearchTree = false;
@@ -44,6 +47,7 @@ static const bool AnalysisMode = false;
 static const int DefaultTimeLimit = 800;
 static const int MaxDepth = 50;
 static const int MinTimeLimit = 0;
+static const bool EnableOpeningTable = true;
 #endif
 
 #endif
