@@ -324,17 +324,24 @@ SearchResult SearchMove(HashTable* table, const Board *board, int player, Search
   SearchResult out;
 
   // Lookup opening table;
-  if (opt.use_open_table && EnableOpeningTable) {
-    auto it = GeneratedOpeningTable.find(board->Hash());
-    if (it != GeneratedOpeningTable.end()) {
+  if (EnableOpeningTable && opt.use_open_table) {
+    auto item = FindOpeningTable(board->Hash());
+    if (item) {
       out.nodes = 0;
       out.depth = 0;
       out.score = 0;
-      out.move_count = it->second.size();
-      for (int i = 0; i < out.move_count; i++) {
-        out.moves[i] = it->second[i];
+      out.move_count = 0;
+      for (int i = 0; i < item->move_count; i++) {
+        int m = item->moves[i];
+        if (!board->canTick(m)) {
+          cerr << "Invalied move from opening table: " << m << endl;
+          continue;
+        }
+        out.moves[out.move_count++] = m;
       }
-      return out;
+      if (out.move_count > 0) {
+        return out;
+      }
     }
   }
 

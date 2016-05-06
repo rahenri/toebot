@@ -11,20 +11,18 @@ struct OpeningGenerator {
   HashTable* table;
 
   OpeningGenerator(HashTable* table) : table(table) {
-    output.open("generated_opening_table.h", ios::out | ios::trunc);
-    output << "#ifndef GENERATED_OPENING_TABLE_H" << endl;
-    output << "#define GENERATED_OPENING_TABLE_H" << endl;
-    output << endl;
-    output << "#include <map>" << endl;
+    output.open("generated_opening_table.cpp", ios::out | ios::trunc);
     output << "#include <vector>" << endl;
     output << endl;
-    output << "std::map<uint64_t, std::vector<int>> GeneratedOpeningTable = {" << endl;
+    output << "#include \"generated_opening_table.h\"" << endl;
+    output << endl;
+    output << "using namespace std" << endl;
+    output << endl;
+    output << "vector<TableIem> generatedOpeningTable = {" << endl;
   }
 
   ~OpeningGenerator() {
     output << "};" << endl;
-    output << endl;
-    output << "#endif" << endl;
     output.close();
   }
 
@@ -35,11 +33,11 @@ struct OpeningGenerator {
     }
 
     SearchOptions opt;
-    opt.time_limit = 5000; // 5s
+    opt.time_limit = 10000; // 10s
     opt.use_open_table = false;
     auto result = SearchMove(table, board, player, opt);
 
-    output << "  {0x" << hex << board->Hash() << ", " << "{";
+    output << "  {0x" << hex << board->Hash() << ", " << result.move_count <<  ", " << "{";
     for (int i = 0; i < result.move_count; i++) {
       if (i > 0) {
         output << ", ";
@@ -63,5 +61,5 @@ struct OpeningGenerator {
 void GenOpeningTable(HashTable* table) {
   Board board;
   OpeningGenerator generator(table);
-  generator.RecursiveGenTable(&board, 1, 2);
+  generator.RecursiveGenTable(&board, 1, 4);
 }
