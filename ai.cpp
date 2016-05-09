@@ -82,10 +82,11 @@ struct AI {
   steady_clock::time_point deadline;
   bool has_deadline;
   bool interruptable;
+  Board board;
 
   SearchTreePrinter* printer;
 
-  AI(int time_limit, bool interruptable) : interruptable(interruptable) {
+  AI(const Board* board, int time_limit, bool interruptable) : interruptable(interruptable), board(*board) {
     if (time_limit == 0 || PlayDeterministic) {
       this->has_deadline = false;
     } else {
@@ -120,18 +121,18 @@ struct AI {
     }
   }
 
-  inline int DeepEvalRec(Board *board, int player, int ply, int depth, int alpha, int beta) {
+  inline int DeepEvalRec(int player, int ply, int depth, int alpha, int beta) {
     if (PrintSearchTree) {
-      printer->Push(board);
+      printer->Push(&board);
       printer->Attr("player", player);
       printer->Attr("ply", ply);
       printer->Attr("depth", depth);
       printer->Attr("alpha", alpha);
       printer->Attr("beta", beta);
-      printer->Attr("board", board->BoardRepr());
-      printer->Attr("macro", board->MacroBoardRepr());
+      printer->Attr("board", board.BoardRepr());
+      printer->Attr("macro", board.MacroBoardRepr());
     }
-    int score = this->DeepEval(board, player, ply, depth, alpha, beta);
+    int score = this->DeepEval(player, ply, depth, alpha, beta);
     if (PrintSearchTree) {
       printer->Attr("score", score);
       printer->Pop();
@@ -139,15 +140,15 @@ struct AI {
     return score;
   }
 
-  inline int DeepEval(Board *board, int player, int ply, int depth, int alpha, int beta) {
+  inline int DeepEval(int player, int ply, int depth, int alpha, int beta) {
     this->nodes++;
     this->checkInterruption();
 
-    if (board->isOver()) {
+    if (board.isOver()) {
       return -MaxScore + ply;
     }
 
-    if (board->IsDrawn()) {
+    if (board.IsDrawn()) {
       return DrawPenalty;
     }
 
@@ -164,7 +165,7 @@ struct AI {
 
     int first_cell = -1;
     if (depth >= HashMinDepth) {
-      auto memo = HashTableSingleton.Get(board);
+      auto memo = HashTableSingleton.Get(&board);
       if (memo != nullptr) {
         if (PrintSearchTree) {
           printer->Attr("hash_hit", true);
@@ -194,22 +195,22 @@ struct AI {
       if (PrintSearchTree) {
         printer->Attr("leaf", true);
       }
-      best_score = board->Eval(player);
+      best_score = board.Eval(player);
       if (best_score > beta) {
         return best_score;
       }
-      move_count = board->ListCaptureMoves(moves, player);
+      move_count = board.ListCaptureMoves(moves, player);
     } else {
-      move_count = board->ListMoves(moves, first_cell);
+      move_count = board.ListMoves(moves, first_cell);
     }
 
     int best_move = -1;
     for (int i = 0; i < move_count; i++) {
       int cell = moves[i];
 
-      auto tick_info = board->tick(cell, player);
-      int score = -this->DeepEvalRec(board, 3-player, ply+1, depth-1, -beta, -max(alpha, best_score+1));
-      board->untick(cell, tick_info);
+      auto tick_info = board.tick(cell, player);
+      int score = -this->DeepEvalRec(3-player, ply+1, depth-1, -beta, -max(alpha, best_score+1));
+      board.untick(cell, tick_info);
       if (score > best_score) {
         best_score = score;
         best_move = cell;
@@ -231,19 +232,19 @@ struct AI {
       } else {
         lower_bound = upper_bound = best_score;
       }
-      HashTableSingleton.Insert(board, lower_bound, upper_bound, depth, best_move);
+      HashTableSingleton.Insert(&board, lower_bound, upper_bound, depth, best_move);
     }
     return best_score;
   }
 
-  SearchResult SearchMove(Board *board, int player, int ply, int depth) {
+  SearchResult SearchMove(int player, int ply, int depth) {
     if (PrintSearchTree) {
-      printer->Push(board);
+      printer->Push(&board);
       printer->Attr("player", player);
       printer->Attr("ply", ply);
       printer->Attr("depth", depth);
-      printer->Attr("board", board->BoardRepr());
-      printer->Attr("macro", board->MacroBoardRepr());
+      printer->Attr("board", board.BoardRepr());
+      printer->Attr("macro", board.MacroBoardRepr());
     }
     this->initial_player = player;
     SearchResult out;
@@ -254,7 +255,7 @@ struct AI {
     this->nodes++;
 
     int first_cell = -1;
-    auto memo = HashTableSingleton.Get(board);
+    auto memo = HashTableSingleton.Get(&board);
     if (memo != nullptr) {
       first_cell = memo->move;
     }
@@ -265,18 +266,18 @@ struct AI {
     }
 
     uint8_t moves[9*9];
-    int move_count = board->ListMoves(moves, first_cell);
+    int move_count = board.ListMoves(moves, first_cell);
 
     for (int i = 0; i < move_count; i++) {
       int cell = moves[i];
 
-      auto tick_info = board->tick(cell, player);
+      auto tick_info = board.tick(cell, player);
       int beta = AnalysisMode ? MaxScore : -out.score;
-      int score = -this->DeepEvalRec(board, 3-player, ply+1, depth-1, -MaxScore, beta);
+      int score = -this->DeepEvalRec(3-player, ply+1, depth-1, -MaxScore, beta);
       if (AnalysisMode) {
         cerr << cell << ": " << score << endl;
       }
-      board->untick(cell, tick_info);
+      board.untick(cell, tick_info);
       if (score > out.score || out.move_count == 0) {
         out.score = score;
         out.moves[0] = cell;
@@ -285,7 +286,7 @@ struct AI {
         out.moves[out.move_count++] = cell;
       }
     }
-    HashTableSingleton.Insert(board, out.score, out.score, depth, out.moves[0]);
+    HashTableSingleton.Insert(&board, out.score, out.score, depth, out.moves[0]);
 
     out.nodes = nodes;
     sort(out.moves, out.moves+out.move_count);
@@ -345,14 +346,13 @@ SearchResult SearchMove(const Board *board, int player, SearchOptions opt) {
     }
   }
 
-  AI ai(opt.time_limit, opt.interruptable);
+  AI ai(board, opt.time_limit, opt.interruptable);
   out.move_count = 0;
   auto start = steady_clock::now();
   for (int depth = 2; depth <= MaxDepth; depth += 1) {
     SearchResult tmp;
-    Board copy = *board;
     try {
-      tmp = ai.SearchMove(&copy, player, ply, depth);
+      tmp = ai.SearchMove(player, ply, depth);
     } catch (TimeLimitExceeded e) {
       cerr << "Search interrupted after reaching time limit of " << opt.time_limit << " milliseconds" << endl;
       out.time_limit_exceeded = true;
