@@ -4,7 +4,6 @@
 #include <iostream>
 
 #include "board.h"
-#include "hash_table.h"
 
 struct SearchResult {
   int moves[9*9];
@@ -25,7 +24,7 @@ struct SearchOptions {
   int time_limit = 100;
 };
 
-SearchResult SearchMove(HashTable* table, const Board *board, int player, SearchOptions opt = SearchOptions());
+SearchResult SearchMove(const Board *board, int player, SearchOptions opt = SearchOptions());
 
 std::ostream& operator<<(std::ostream&, const SearchResult&);
 

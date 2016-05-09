@@ -3,7 +3,7 @@
 
 class HashTable;
 
-void GenOpeningTable(HashTable* table);
+void GenOpeningTable();
 
 #endif
 

@@ -4,9 +4,12 @@
 #include <cstdint>
 
 #include "board.h"
+#include "flags.h"
+
+static const int HashTableSize = AnalysisMode ? 400000009 : 50000017;
 
 struct BoardMemo {
-  uint64_t hash = 0;
+  uint64_t hash;
   int32_t lower_bound, upper_bound;
   int depth;
   int move;
@@ -14,12 +17,9 @@ struct BoardMemo {
 
 class HashTable {
   public:
-    HashTable(int size);
-    ~HashTable();
-
     BoardMemo* Get(const Board* board) {
       uint64_t hash = board->Hash();
-      BoardMemo* memo = this->data + (hash % this->size);
+      BoardMemo* memo = this->data + (hash % HashTableSize);
       if (memo->hash != hash) {
         return nullptr;
       }
@@ -28,7 +28,7 @@ class HashTable {
 
     BoardMemo* Insert(const Board *board, int lower_bound, int upper_bound, int depth, int move) {
       uint64_t hash = board->Hash();
-      BoardMemo* memo = this->data + (hash % this->size);
+      BoardMemo* memo = this->data + (hash % HashTableSize);
       if (memo->hash != hash || depth > memo->depth) {
         memo->hash = hash;
         memo->depth = depth;
@@ -46,9 +46,10 @@ class HashTable {
     }
 
   private:
-    BoardMemo* data;
-    int size;
+    BoardMemo data[HashTableSize];
 };
+
+extern HashTable HashTableSingleton;
 
 
 #endif

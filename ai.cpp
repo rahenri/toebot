@@ -12,6 +12,7 @@
 #include "flags.h"
 #include "generated_opening_table.h"
 #include "line_reader.h"
+#include "hash_table.h"
 
 using namespace std::chrono;
 
@@ -80,12 +81,11 @@ struct AI {
   int initial_player = 0;
   steady_clock::time_point deadline;
   bool has_deadline;
-  HashTable* table;
   bool interruptable;
 
   SearchTreePrinter* printer;
 
-  AI(HashTable* table, int time_limit, bool interruptable) : table(table), interruptable(interruptable) {
+  AI(int time_limit, bool interruptable) : interruptable(interruptable) {
     if (time_limit == 0 || PlayDeterministic) {
       this->has_deadline = false;
     } else {
@@ -164,7 +164,7 @@ struct AI {
 
     int first_cell = -1;
     if (depth >= HashMinDepth) {
-      auto memo = this->table->Get(board);
+      auto memo = HashTableSingleton.Get(board);
       if (memo != nullptr) {
         if (PrintSearchTree) {
           printer->Attr("hash_hit", true);
@@ -231,7 +231,7 @@ struct AI {
       } else {
         lower_bound = upper_bound = best_score;
       }
-      this->table->Insert(board, lower_bound, upper_bound, depth, best_move);
+      HashTableSingleton.Insert(board, lower_bound, upper_bound, depth, best_move);
     }
     return best_score;
   }
@@ -254,7 +254,7 @@ struct AI {
     this->nodes++;
 
     int first_cell = -1;
-    auto memo = this->table->Get(board);
+    auto memo = HashTableSingleton.Get(board);
     if (memo != nullptr) {
       first_cell = memo->move;
     }
@@ -285,7 +285,7 @@ struct AI {
         out.moves[out.move_count++] = cell;
       }
     }
-    this->table->Insert(board, out.score, out.score, depth, out.moves[0]);
+    HashTableSingleton.Insert(board, out.score, out.score, depth, out.moves[0]);
 
     out.nodes = nodes;
     sort(out.moves, out.moves+out.move_count);
@@ -313,7 +313,7 @@ int SearchResult::RandomMove() const {
   return moves[RandN(move_count)];
 }
 
-SearchResult SearchMove(HashTable* table, const Board *board, int player, SearchOptions opt) {
+SearchResult SearchMove(const Board *board, int player, SearchOptions opt) {
   int ply = 1;
   for (int i = 0; i < 9*9; i++) {
     if (board->Cell(i) != 0) {
@@ -345,7 +345,7 @@ SearchResult SearchMove(HashTable* table, const Board *board, int player, Search
     }
   }
 
-  AI ai(table, opt.time_limit, opt.interruptable);
+  AI ai(opt.time_limit, opt.interruptable);
   out.move_count = 0;
   auto start = steady_clock::now();
   for (int depth = 2; depth <= MaxDepth; depth += 1) {

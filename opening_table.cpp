@@ -8,9 +8,8 @@ using namespace std;
 
 struct OpeningGenerator {
   fstream output;
-  HashTable* table;
 
-  OpeningGenerator(HashTable* table) : table(table) {
+  OpeningGenerator() {
     output.open("generated_opening_table.cpp", ios::out | ios::trunc);
     output << "#include <vector>" << endl;
     output << endl;
@@ -35,7 +34,7 @@ struct OpeningGenerator {
     SearchOptions opt;
     opt.time_limit = 10000; // 10s
     opt.use_open_table = false;
-    auto result = SearchMove(table, board, player, opt);
+    auto result = SearchMove(board, player, opt);
 
     output << "  {0x" << hex << board->Hash() << ", " << result.move_count <<  ", " << "{";
     for (int i = 0; i < result.move_count; i++) {
@@ -58,8 +57,8 @@ struct OpeningGenerator {
 };
 
 
-void GenOpeningTable(HashTable* table) {
+void GenOpeningTable() {
   Board board;
-  OpeningGenerator generator(table);
+  OpeningGenerator generator;
   generator.RecursiveGenTable(&board, 1, 4);
 }

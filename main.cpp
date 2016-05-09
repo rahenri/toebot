@@ -102,7 +102,7 @@ struct Game {
     return true;
   }
 
-  bool handleAction(HashTable* table, const vector<string>& args) {
+  bool handleAction(const vector<string>& args) {
     int time_limit = DefaultTimeLimit;
     if (args.size() >= 2) {
       time_limit = min(stoi(args[1]) - 50, DefaultTimeLimit);
@@ -110,7 +110,7 @@ struct Game {
     time_limit = max(time_limit, MinTimeLimit);
     SearchOptions opt;
     opt.time_limit = time_limit;
-    SearchResult result = SearchMove(table, &board, settings.my_id, opt);
+    SearchResult result = SearchMove(&board, settings.my_id, opt);
     if (result.move_count == 0) {
       cerr << "No cell available" << endl;
       return false;
@@ -144,20 +144,20 @@ struct Game {
     }
   }
 
-  void Ponder(HashTable* table) {
+  void Ponder() {
     cerr << "Start pondering" << endl;
     // Ponder for up to 10 minutes.
     SearchOptions opt;
     opt.interruptable = true;
     opt.time_limit = 60000; // 10 min
-    SearchMove(table, &board, 3-settings.my_id, opt);
+    SearchMove(&board, 3-settings.my_id, opt);
     cerr << "End pondering" << endl;
   }
 };
 
 bool RunTests();
 
-void handleSelfPlay(HashTable* table) {
+void handleSelfPlay() {
   Board board;
   int player = 1;
   int rounds = 0;
@@ -173,7 +173,7 @@ void handleSelfPlay(HashTable* table) {
     }
     SearchOptions opt;
     opt.time_limit = max(MinTimeLimit, DefaultTimeLimit);
-    SearchResult result = SearchMove(table, &board, player, opt);
+    SearchResult result = SearchMove(&board, player, opt);
     if (result.manual_interruption) {
       break;
     }
@@ -213,8 +213,6 @@ int main() {
   string line;
   unique_ptr<Game> game(new Game);
 
-  HashTable table(AnalysisMode ? 400000009 : 50000017);
-
   LineReader* reader = &LineReaderSingleton;
 
   while (1) {
@@ -241,10 +239,10 @@ int main() {
     vector<string> args = sliceVector(command, 1);
     bool success = true;
     if (name == "action") {
-      success = game->handleAction(&table, args);
+      success = game->handleAction(args);
       // Ponder
       if (EnablePonder) {
-        game->Ponder(&table);
+        game->Ponder();
       }
     } else if (name == "settings") {
       game->settings.update(args);
@@ -267,11 +265,11 @@ int main() {
         cerr << game->board;
       }
     } else if (name == "self_play") {
-      handleSelfPlay(&table);
+      handleSelfPlay();
     } else if (name == "list_moves") {
       game->handleListMoves();
     } else if (name == "gen_opening") {
-      GenOpeningTable(&table);
+      GenOpeningTable();
     } else {
       cerr << "Unknown command: " << name << endl;
       success = false;
