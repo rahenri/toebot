@@ -83,10 +83,15 @@ struct AI {
   bool has_deadline;
   bool interruptable;
   Board board;
+  int player;
+  int ply;
+  int depth;
 
   SearchTreePrinter* printer;
 
-  AI(const Board* board, int time_limit, bool interruptable) : interruptable(interruptable), board(*board) {
+  AI(const Board* board, int player, int ply, int time_limit, bool interruptable)
+    : interruptable(interruptable), board(*board), player(player), ply(ply), depth(0) {
+
     if (time_limit == 0 || PlayDeterministic) {
       this->has_deadline = false;
     } else {
@@ -98,6 +103,10 @@ struct AI {
     if (PrintSearchTree) {
       printer = tree_printer();
     }
+  }
+
+  void SetMaxDepth(int depth) {
+    this->depth = depth;
   }
 
   void checkInterruption() {
@@ -121,7 +130,11 @@ struct AI {
     }
   }
 
-  inline int DeepEvalRec(int player, int ply, int depth, int alpha, int beta) {
+  inline int DeepEvalRec(int cell, int alpha, int beta) {
+    auto tick_info = board.tick(cell, player);
+    player = 3-player;
+    depth--;
+    ply++;
     if (PrintSearchTree) {
       printer->Push(&board);
       printer->Attr("player", player);
@@ -132,15 +145,19 @@ struct AI {
       printer->Attr("board", board.BoardRepr());
       printer->Attr("macro", board.MacroBoardRepr());
     }
-    int score = this->DeepEval(player, ply, depth, alpha, beta);
+    int score = this->DeepEval(-beta, -alpha);
     if (PrintSearchTree) {
       printer->Attr("score", score);
       printer->Pop();
     }
-    return score;
+    player = 3-player;
+    depth++;
+    ply--;
+    board.untick(cell, tick_info);
+    return -score;
   }
 
-  inline int DeepEval(int player, int ply, int depth, int alpha, int beta) {
+  inline int DeepEval(int alpha, int beta) {
     this->nodes++;
     this->checkInterruption();
 
@@ -208,9 +225,7 @@ struct AI {
     for (int i = 0; i < move_count; i++) {
       int cell = moves[i];
 
-      auto tick_info = board.tick(cell, player);
-      int score = -this->DeepEvalRec(3-player, ply+1, depth-1, -beta, -max(alpha, best_score+1));
-      board.untick(cell, tick_info);
+      int score = this->DeepEvalRec(cell, max(alpha, best_score+1), beta);
       if (score > best_score) {
         best_score = score;
         best_move = cell;
@@ -237,7 +252,7 @@ struct AI {
     return best_score;
   }
 
-  SearchResult SearchMove(int player, int ply, int depth) {
+  SearchResult SearchMove() {
     if (PrintSearchTree) {
       printer->Push(&board);
       printer->Attr("player", player);
@@ -270,14 +285,11 @@ struct AI {
 
     for (int i = 0; i < move_count; i++) {
       int cell = moves[i];
-
-      auto tick_info = board.tick(cell, player);
-      int beta = AnalysisMode ? MaxScore : -out.score;
-      int score = -this->DeepEvalRec(3-player, ply+1, depth-1, -MaxScore, beta);
+      int alpha = AnalysisMode ? -MaxScore : out.score;
+      int score = this->DeepEvalRec(moves[i], alpha, MaxScore);
       if (AnalysisMode) {
         cerr << cell << ": " << score << endl;
       }
-      board.untick(cell, tick_info);
       if (score > out.score || out.move_count == 0) {
         out.score = score;
         out.moves[0] = cell;
@@ -346,13 +358,14 @@ SearchResult SearchMove(const Board *board, int player, SearchOptions opt) {
     }
   }
 
-  AI ai(board, opt.time_limit, opt.interruptable);
+  AI ai(board, player, ply, opt.time_limit, opt.interruptable);
   out.move_count = 0;
   auto start = steady_clock::now();
   for (int depth = 2; depth <= MaxDepth; depth += 1) {
     SearchResult tmp;
     try {
-      tmp = ai.SearchMove(player, ply, depth);
+      ai.SetMaxDepth(depth);
+      tmp = ai.SearchMove();
     } catch (TimeLimitExceeded e) {
       cerr << "Search interrupted after reaching time limit of " << opt.time_limit << " milliseconds" << endl;
       out.time_limit_exceeded = true;
