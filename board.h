@@ -111,8 +111,6 @@ inline void DecodeBoard(int8_t* board, uint32_t code) {
   }
 }
 
-static const int MacroCellWeight[9] = {3, 2, 3, 2, 4, 2, 3, 2, 3};
-
 class Board {
  public:
 

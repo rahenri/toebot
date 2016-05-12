@@ -158,6 +158,7 @@ struct Game {
 bool RunTests();
 
 void handleSelfPlay() {
+  RandSeed(0);
   Board board;
   int player = 1;
   int rounds = 0;
@@ -205,7 +206,7 @@ void handleSelfPlay() {
 }
 
 int main() {
-  RandSeed(PlayDeterministic ? 0 : duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count());
+  RandSeed(duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count());
 
   InitSignals();
   InitHashConstants();
