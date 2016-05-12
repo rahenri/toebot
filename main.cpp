@@ -161,6 +161,7 @@ void handleSelfPlay() {
   Board board;
   int player = 1;
   int rounds = 0;
+  int64_t total_nodes = 0;
   while(1) {
     auto t1 = steady_clock::now();
     if (board.isOver()) {
@@ -198,8 +199,9 @@ void handleSelfPlay() {
     cerr << endl;
     player = 3-player;
     rounds++;
+    total_nodes += result.nodes;
   }
-  cerr << "Rounds: " << rounds << endl;
+  cerr << "Rounds: " << rounds << " Total Nodes: " << HumanReadable(total_nodes) << endl;
 }
 
 int main() {

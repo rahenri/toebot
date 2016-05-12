@@ -26,6 +26,21 @@ inline void decodeCell(cell c, int& row, int& col) {
   col = mcol*3 + (offset%3);
 }
 
+template <class T>
+string HumanReadable(T number) {
+  bool neg = number < 0;
+  if (neg) number = -number;
+  string output;
+  for (int i = 0; number > 0; i++) {
+    if (i % 3 == 0 && i > 0) {
+      output = "," + output;
+    }
+    output = char(number%10 + '0') + output;
+    number /= 10;
+  }
+  return output;
+}
+
 vector<string> parseCSV(const string& csv);
 
 #endif

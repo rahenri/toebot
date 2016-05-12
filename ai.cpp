@@ -318,7 +318,7 @@ std::ostream& operator<<(std::ostream& stream, const SearchResult& res) {
     }
     stream << res.moves[i];
   }
-  stream << "] Score: " << res.score << " Depth: " << res.depth << " Nodes: " << res.nodes;
+  stream << "] Score: " << res.score << " Depth: " << res.depth << " Nodes: " << HumanReadable(res.nodes);
   return stream;
 }
 
