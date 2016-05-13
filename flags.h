@@ -1,17 +1,16 @@
 #ifndef FLAGS_H
 #define FLAGS_H
 
-// #define _DEFAULT
-#define _DETERMINISTIC
+#define _DEFAULT
+// #define _DETERMINISTIC
 
-// Dsiable it for now, it doens't seem to be better.
+// Disable it for now, it doens't seem to be better.
 static const bool EnablePonder = false;
 
 // Disable opening table for now.
 static const bool EnableOpeningTable = false;
 
 #ifdef _LOCAL
-
 
 #ifdef _DETERMINISTIC
 static const bool PrintSearchTree = false;

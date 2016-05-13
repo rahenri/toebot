@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# coding=utf-8
 
 import os
 import sys
@@ -6,6 +7,8 @@ import argparse
 import random
 import multiprocessing
 import logging
+import time
+import math
 from subprocess import Popen, PIPE, STDOUT
 
 bot_stderr = None
@@ -37,9 +40,11 @@ def main(args):
 
     # print summary
     ratio = 0
+    conf = 0
     if base>0 or test>0:
       ratio = float(test) / float(test + base)
-    print 'Base({}):{} Test({}):{} Draws:{} Total:{} Ratio:{:.2f}%'.format(bot_names[0], base, bot_names[1], test, draws, base+test+draws, ratio*100)
+      conf = 1.96 * math.sqrt(ratio * (1.0 - ratio) / (base + test))
+    print 'Base({}):{} Test({}):{} Draws:{} Total:{} Ratio:{:.2f}±{:.2f}%'.format(bot_names[0], base, bot_names[1], test, draws, base+test+draws, ratio*100, conf*100)
 
     sys.stdout.flush()
 
@@ -52,6 +57,10 @@ def OneRound(bot_names):
     # Simulate game init input
     send_init('1', bots[0], args.time_per_move)
     send_init('2', bots[1], args.time_per_move)
+
+    # Wait two second for the bots to start
+    time.sleep(2)
+
     round_num = 1
     move = 1
     field = ','.join(['0'] * 81)
