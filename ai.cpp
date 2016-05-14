@@ -45,13 +45,14 @@ struct AI {
   bool interruptable;
   Board board;
   int player;
-  int ply;
-  int depth;
+  int ply = 0;
+  int depth = 0;
+  bool shortened = false;
 
   SearchTreePrinter* printer;
 
   AI(const Board* board, int player, int ply, int time_limit, bool interruptable)
-    : interruptable(interruptable), board(*board), player(player), ply(ply), depth(0) {
+    : interruptable(interruptable), board(*board), player(player), ply(ply) {
 
     if (time_limit == 0) {
       this->has_deadline = false;
@@ -106,7 +107,21 @@ struct AI {
       printer->Attr("board", board.BoardRepr());
       printer->Attr("macro", board.MacroBoardRepr());
     }
-    int score = this->DeepEval(-beta, -alpha);
+    int score;
+    bool full_search = true;
+    if (!shortened && depth >= 4) {
+      shortened = true;
+      depth -= 4;
+      score = -this->DeepEval(-(beta+20000), -(alpha-20000));
+      depth += 4;
+      shortened = false;
+      if  (score < alpha - 20000 || score > beta + 20000) {
+        full_search = false;
+      }
+    }
+    if (full_search) {
+      score = -this->DeepEval(-beta, -alpha);
+    }
     if (PrintSearchTree) {
       printer->Attr("score", score);
       printer->Pop();
@@ -115,7 +130,7 @@ struct AI {
     depth++;
     ply--;
     board.untick(cell, tick_info);
-    return -score;
+    return score;
   }
 
   inline int DeepEval(int alpha, int beta) {
