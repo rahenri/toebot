@@ -14,34 +14,13 @@
 #include "random.h"
 #include "score_table.h"
 #include "util.h"
+#include "cmd_args.h"
 
 using namespace std;
 using namespace std::chrono;
 
-vector<string> parseLine(const string& line) {
-  vector<string> out;
-  stringstream ss(line);
-  string part;
-  while (ss >> part) {
-    if (part.size() > 0 && part[0] == '#') {
-      break;
-    }
-    out.push_back(part);
-  }
-  return out;
-}
-
-template <class T>
-vector<T> sliceVector(const vector<T>& input, int start = 0, int end = -1) {
-  vector<T> out;
-  if (end == -1 || end > int(input.size())) {
-    end = input.size();
-  }
-  for (; start < end; start++) {
-    out.push_back(input[start]);
-  }
-  return out;
-}
+const int* MinTimeLimit = NewIntFlag("min-time-limit", 0);
+const int* DefaultTimeLimit = NewIntFlag("default-time-limit", 800);
 
 struct Settings {
   int time_bank = 10000;
@@ -103,11 +82,11 @@ struct Game {
   }
 
   bool handleAction(const vector<string>& args) {
-    int time_limit = DefaultTimeLimit;
+    int time_limit = *DefaultTimeLimit;
     if (args.size() >= 2) {
-      time_limit = min(stoi(args[1]) - 50, DefaultTimeLimit);
+      time_limit = min(stoi(args[1]) - 50, *DefaultTimeLimit);
     }
-    time_limit = max(time_limit, MinTimeLimit);
+    time_limit = max(time_limit, *MinTimeLimit);
     SearchOptions opt;
     opt.time_limit = time_limit;
     SearchResult result = SearchMove(&board, settings.my_id, opt);
@@ -174,7 +153,7 @@ void handleSelfPlay() {
       break;
     }
     SearchOptions opt;
-    opt.time_limit = max(MinTimeLimit, DefaultTimeLimit);
+    opt.time_limit = max(*MinTimeLimit, *DefaultTimeLimit);
     SearchResult result = SearchMove(&board, player, opt);
     if (result.manual_interruption) {
       break;
@@ -205,8 +184,12 @@ void handleSelfPlay() {
   cerr << "Rounds: " << rounds << " Total Nodes: " << HumanReadable(total_nodes) << endl;
 }
 
-int main() {
+int main(int argc, const char** argv) {
   RandSeed(duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count());
+
+  if (!ParseFlags(argc, argv)) {
+    return 1;
+  }
 
   InitSignals();
   InitHashConstants();

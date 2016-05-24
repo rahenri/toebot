@@ -13,12 +13,24 @@
 #include "generated_opening_table.h"
 #include "line_reader.h"
 #include "hash_table.h"
+#include "cmd_args.h"
 
 using namespace std::chrono;
 
 static const int DrawPenalty = 50;
 
 static const int HashMinDepth = 2;
+
+static const bool PrintSearchTree = false;
+auto DepthShortening = NewIntFlag("depth-shorterning", 0);
+auto ShorteningThreshold = NewIntFlag("shorterning-threshold", 20000);
+
+const int* MaxDepth = NewIntFlag("max-depth", 100);
+
+const bool* AnalysisMode = NewBoolFlag("analysis", false);
+
+// Disable opening table for now.
+const bool* EnableOpeningTable = NewBoolFlag("enable-opening-table", false);
 
 struct TimeLimitExceeded {
 };
@@ -109,13 +121,13 @@ struct AI {
     }
     int score;
     bool full_search = true;
-    if (!shortened && depth >= 4) {
+    if (*DepthShortening > 0 && !shortened && depth >= *DepthShortening) {
       shortened = true;
-      depth -= 4;
-      score = -this->DeepEval(-(beta+20000), -(alpha-20000));
-      depth += 4;
+      depth -= *DepthShortening;
+      score = -this->DeepEval(-(beta+*ShorteningThreshold), -(alpha-*ShorteningThreshold));
+      depth += *DepthShortening;
       shortened = false;
-      if  (score < alpha - 20000 || score > beta + 20000) {
+      if  (score < alpha - *ShorteningThreshold || score > beta + *ShorteningThreshold) {
         full_search = false;
       }
     }
@@ -248,7 +260,7 @@ struct AI {
       first_cell = memo->move;
     }
 
-    if (AnalysisMode) {
+    if (*AnalysisMode) {
       cerr << "-------------------------------" << endl;
       cerr << "Depth: " << depth << endl;
     }
@@ -258,9 +270,9 @@ struct AI {
 
     for (int i = 0; i < move_count; i++) {
       int cell = moves[i];
-      int alpha = AnalysisMode ? -MaxScore : out.score;
+      int alpha = *AnalysisMode ? -MaxScore : out.score;
       int score = this->DeepEvalRec(moves[i], alpha, MaxScore);
-      if (AnalysisMode) {
+      if (*AnalysisMode) {
         cerr << cell << ": " << score << endl;
       }
       if (score > out.score || out.move_count == 0) {
@@ -310,7 +322,7 @@ SearchResult SearchMove(const Board *board, int player, SearchOptions opt) {
   SearchResult out;
 
   // Lookup opening table;
-  if (EnableOpeningTable && opt.use_open_table) {
+  if (*EnableOpeningTable && opt.use_open_table) {
     auto item = FindOpeningTable(board->Hash());
     if (item) {
       out.nodes = 0;
@@ -334,7 +346,7 @@ SearchResult SearchMove(const Board *board, int player, SearchOptions opt) {
   AI ai(board, player, ply, opt.time_limit, opt.interruptable);
   out.move_count = 0;
   auto start = steady_clock::now();
-  for (int depth = 2; depth <= MaxDepth; depth += 1) {
+  for (int depth = 2; depth <= *MaxDepth; depth += 1) {
     SearchResult tmp;
     try {
       ai.SetMaxDepth(depth);
@@ -349,7 +361,7 @@ SearchResult SearchMove(const Board *board, int player, SearchOptions opt) {
       break;
     }
     cerr << tmp;
-    if (AnalysisMode) {
+    if (*AnalysisMode) {
       cerr << " Time: " << duration_cast<milliseconds>(steady_clock::now() - start).count();
     }
     cerr << endl;

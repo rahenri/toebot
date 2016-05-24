@@ -6,7 +6,8 @@
 #include "board.h"
 #include "flags.h"
 
-static const int HashTableSize = AnalysisMode ? 400000009 : 50000017;
+static const int HashTableSize = 50000017;
+// static const int HashTableSize = 200000033;
 
 struct BoardMemo {
   uint64_t hash;

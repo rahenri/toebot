@@ -43,4 +43,18 @@ string HumanReadable(T number) {
 
 vector<string> parseCSV(const string& csv);
 
+vector<string> parseLine(const string& line);
+
+template <class T>
+vector<T> sliceVector(const vector<T>& input, int start = 0, int end = -1) {
+  vector<T> out;
+  if (end == -1 || end > int(input.size())) {
+    end = input.size();
+  }
+  for (; start < end; start++) {
+    out.push_back(input[start]);
+  }
+  return out;
+}
+
 #endif
