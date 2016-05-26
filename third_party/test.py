@@ -11,52 +11,138 @@ import time
 import math
 from subprocess import Popen, PIPE, STDOUT
 
-bot_stderr = None
+bot_stderr = open('stderr', 'w')
 
-def main(args):
+class BotInfo:
+  def __init__(self, cmd, identity):
+    self.cmd = cmd
+    self.identity = identity
 
-  bot_names = [args.bots[0], args.bots[1]]
-  draws = 0
-  base = 0
-  test = 0
+  def Run(self):
+    return BotProc(self.identity, Popen(self.cmd, shell=True, stdout=PIPE, stdin=PIPE, stderr=bot_stderr))
 
-  pairs = []
-  pair = list(bot_names)
-  for i in range(args.count):
-    pairs.append(list(pair))
-    pair.reverse()
 
-  pool = multiprocessing.Pool(processes=args.workers) 
+class BotProc:
+  def __init__(self, identity, proc):
+    self.identity = identity
+    self._proc = proc
 
-  for result in pool.imap_unordered(OneRound, pairs, 1):
-    if result == 'Draw':
-      draws += 1
-    elif result == bot_names[0]:
-      base += 1
-    elif result == bot_names[1]:
-      test += 1
-    else:
-      raise RuntimeError('Unexpected result value: "{}"'.format(result))
+  def send_init(self, bot_id, time_per_move):
+    init_input = (
+      'settings timebank 10000\n'
+      'settings time_per_move {time_per_move}\n'
+      'settings player_names player1,player2\n'
+      'settings your_bot player{bot_id}\n'
+      'settings your_botid {bot_id}\n'.format(bot_id=bot_id, time_per_move=time_per_move))
 
-    # print summary
+    self._proc.stdin.write(init_input)
+
+
+  def send_update(self, round_num, move, field, macroboard, time_per_move):
+    update_input = (
+      'update game round {round}\n'
+      'update game move {move}\n'
+      'update game field {field}\n'
+      'update game macroboard {macro}\n'
+      'action move {time_per_move}\n'.format(
+        round=round_num,
+        move=move,
+        field=field,
+        macro=macroboard,
+        time_per_move=time_per_move))
+
+    self._proc.stdin.write(update_input)
+    out = self._proc.stdout.readline().strip()
+    return out
+
+  def close(self):
+    self._proc.stdin.close()
+    self._proc.wait()
+
+
+class Score:
+  def __init__(self, left, right):
+    self.wins = 0
+    self.loses = 0
+    self.draws = 0
+    self.left = left
+    self.right = right
+
+  def PrintSummary(self):
     ratio = 0
     conf = 0
-    if base>0 or test>0:
-      ratio = float(test) / float(test + base)
-      conf = 1.96 * math.sqrt(ratio * (1.0 - ratio) / (base + test))
-    print 'Base({}):{} Test({}):{} Draws:{} Total:{} Ratio:{:.2f}±{:.2f}%'.format(bot_names[0], base, bot_names[1], test, draws, base+test+draws, ratio*100, conf*100)
+    if self.wins+self.loses>0:
+      ratio = float(self.wins) / float(self.wins + self.loses)
+      conf = 1.96 * math.sqrt(ratio * (1.0 - ratio) / (self.wins + self.loses))
+    print 'Base({}):{} Test({}):{} Draws:{} Total:{} Ratio:{:.2f}±{:.2f}%'.format(self.left.cmd, self.loses, self.right.cmd, self.wins, self.draws, self.wins+self.loses+self.draws, ratio*100, conf*100)
 
+
+class ScoreBoard:
+  def __init__(self):
+    self._score = {}
+
+  def _get(self, b1, b2):
+    key = (b1.identity, b2.identity)
+    out = self._score.get(key, None)
+    if not out:
+      out = Score(b1, b2)
+      self._score[key] = out
+    return out
+
+  def add(self, b1, b2, result):
+    if b1.identity > b2.identity:
+      b1, b2 = b2, b1
+    score = self._get(b1, b2)
+    if result == b1.identity:
+      score.wins += 1
+    elif result == b2.identity:
+      score.loses += 1
+    elif result == -1:
+      score.draws += 1
+    else:
+      raise ValueError('Unexpected result %s' % str(result))
+
+  def PrintSummary(self):
+    for key in sorted(self._score):
+      score = self._score[key]
+      score.PrintSummary()
     sys.stdout.flush()
 
 
-def OneRound(bot_names):
+def main(args):
+  bots = []
+  identity = 0
+  for cmd in args.bots:
+    bots.append(BotInfo(cmd, identity))
+    identity += 1
+
+  score_board = ScoreBoard()
+
+  games = []
+  for _ in range((args.count+1) / 2):
+    for i in range(len(bots)):
+      for j in range(len(bots)):
+        if i == j:
+          continue
+        games.append((bots[i], bots[j]))
+
+  pool = multiprocessing.Pool(processes=args.workers) 
+
+  for b1, b2, result in pool.imap(OneRound, games, chunksize=1):
+    score_board.add(b1, b2, result)
+
+    # print summary
+    score_board.PrintSummary()
+
+
+def OneRound((bot1, bot2)):
   try:
     # Get robots who are fighting (player1, player2)
-    bots = get_bots(bot_names[0], bot_names[1])
+    bots = [bot1.Run(), bot2.Run()]
 
     # Simulate game init input
-    send_init('1', bots[0], args.time_per_move)
-    send_init('2', bots[1], args.time_per_move)
+    bots[0].send_init('1', args.time_per_move)
+    bots[1].send_init('2', args.time_per_move)
 
     # Wait two second for the bots to start
     time.sleep(2)
@@ -66,22 +152,22 @@ def OneRound(bot_names):
     field = ','.join(['0'] * 81)
     macroboard = ','.join(['-1'] * 9)
     turn = 0
-    result = ''
+    result = -1
     while True:
       bot = bots[turn]
       bot_id = turn+1
       # Send inputs to bot
-      move = send_update(bot, round_num, move, field, macroboard, args.time_per_move)
+      move = bot.send_update(round_num, move, field, macroboard, args.time_per_move)
       # Update macroboard and game field
       field = update_field(field, move, str(bot_id))
       macroboard = update_macroboard(field, move)
       # Check for winner. If winner, exit.
       if is_winner(macroboard):
-        result = bot_names[turn]
+        result = bot.identity
         break
 
       if is_draw(macroboard):
-        result = 'Draw'
+        result = -1
         break
 
       round_num += 1
@@ -93,46 +179,9 @@ def OneRound(bot_names):
     raise
   finally:
     for b in bots:
-      b.stdin.close()
+      b.close()
 
-  return result
-
-
-
-def get_bots(path1, path2):
-  bot1 = Popen(path1, shell=True, stdout=PIPE, stdin=PIPE)
-  bot2 = Popen(path2, shell=True, stdout=PIPE, stdin=PIPE)
-
-  return bot1, bot2
-
-
-def send_init(bot_id, bot, time_per_move):
-  init_input = (
-    'settings timebank 10000\n'
-    'settings time_per_move {time_per_move}\n'
-    'settings player_names player1,player2\n'
-    'settings your_bot player{bot_id}\n'
-    'settings your_botid {bot_id}\n'.format(bot_id=bot_id, time_per_move=time_per_move))
-
-  bot.stdin.write(init_input)
-
-
-def send_update(bot, round_num, move, field, macroboard, time_per_move):
-  update_input = (
-    'update game round {round}\n'
-    'update game move {move}\n'
-    'update game field {field}\n'
-    'update game macroboard {macro}\n'
-    'action move {time_per_move}\n'.format(
-      round=round_num,
-      move=move,
-      field=field,
-      macro=macroboard,
-      time_per_move=time_per_move))
-
-  bot.stdin.write(update_input)
-  out = bot.stdout.readline().strip()
-  return out
+  return bot1, bot2, result
 
 
 def update_field(field, move, bot_id):
@@ -245,7 +294,7 @@ def is_draw(macroboard):
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Run two bots againts each other.')
-  parser.add_argument('bots', nargs=2, metavar=('bot1', 'bot2'), help='The two bots to face each other')
+  parser.add_argument('bots', nargs='+', help='The bots to be tested')
   parser.add_argument('--count', type=int, default=1, help='Number of times to run the bots (Default: 1)')
   parser.add_argument('--time-per-move', type=int, default=500, help='Milliseconds added to time bank each turn (Default: 500)')
   parser.add_argument('--workers', type=int, default=1, help='Number of parallel workers (Default: 1)')

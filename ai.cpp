@@ -91,7 +91,7 @@ struct AI {
     if (InterruptRequested()) {
       throw InterrutionRequestedException();
     }
-    if (EnablePonder && interruptable) {
+    if (*EnablePonder && interruptable) {
       if (LineReaderSingleton.HasData()) {
         throw InterrutionRequestedException();
       }

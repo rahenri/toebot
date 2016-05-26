@@ -227,7 +227,7 @@ int main(int argc, const char** argv) {
     if (name == "action") {
       success = game->handleAction(args);
       // Ponder
-      if (EnablePonder) {
+      if (*EnablePonder) {
         game->Ponder();
       }
     } else if (name == "settings") {
