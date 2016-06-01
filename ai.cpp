@@ -22,7 +22,7 @@ static const int DrawPenalty = 50;
 static const int HashMinDepth = 2;
 
 static const bool PrintSearchTree = false;
-auto DepthShortening = NewIntFlag("depth-shorterning", 0);
+auto DepthShortening = NewIntFlag("depth-shortening", 0);
 auto ShorteningThreshold = NewIntFlag("shorterning-threshold", 20000);
 
 const int* MaxDepth = NewIntFlag("max-depth", 100);

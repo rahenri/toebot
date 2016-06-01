@@ -19,12 +19,16 @@ class BotInfo:
     self.identity = identity
 
   def Run(self):
-    return BotProc(self.identity, Popen(self.cmd, shell=True, stdout=PIPE, stdin=PIPE, stderr=bot_stderr))
+    return BotProc(self.identity, self.cmd, Popen(self.cmd, shell=True, stdout=PIPE, stdin=PIPE, stderr=bot_stderr))
+
+  def __cmp__(self, other):
+    return cmp(self.identity, other.identity)
 
 
 class BotProc:
-  def __init__(self, identity, proc):
+  def __init__(self, identity, cmd, proc):
     self.identity = identity
+    self.cmd = cmd
     self._proc = proc
 
   def send_init(self, bot_id, time_per_move):
@@ -38,15 +42,13 @@ class BotProc:
     self._proc.stdin.write(init_input)
 
 
-  def send_update(self, round_num, move, field, macroboard, time_per_move):
+  def send_update(self, round_num, field, macroboard, time_per_move):
     update_input = (
       'update game round {round}\n'
-      'update game move {move}\n'
       'update game field {field}\n'
       'update game macroboard {macro}\n'
       'action move {time_per_move}\n'.format(
         round=round_num,
-        move=move,
         field=field,
         macro=macroboard,
         time_per_move=time_per_move))
@@ -94,15 +96,16 @@ class ScoreBoard:
       b1, b2 = b2, b1
     score = self._get(b1, b2)
     if result == b1.identity:
-      score.wins += 1
-    elif result == b2.identity:
       score.loses += 1
+    elif result == b2.identity:
+      score.wins += 1
     elif result == -1:
       score.draws += 1
     else:
       raise ValueError('Unexpected result %s' % str(result))
 
   def PrintSummary(self):
+    print '-' * 80
     for key in sorted(self._score):
       score = self._score[key]
       score.PrintSummary()
@@ -157,13 +160,15 @@ def OneRound((bot1, bot2)):
       bot = bots[turn]
       bot_id = turn+1
       # Send inputs to bot
-      move = bot.send_update(round_num, move, field, macroboard, args.time_per_move)
+      move = bot.send_update(round_num, field, macroboard, args.time_per_move)
       # Update macroboard and game field
       field = update_field(field, move, str(bot_id))
       macroboard = update_macroboard(field, move)
       # Check for winner. If winner, exit.
       if is_winner(macroboard):
         result = bot.identity
+        bot_stderr.write('Bot %d(%s) won\n' % (bot.identity, bot.cmd))
+        bot_stderr.flush()
         break
 
       if is_draw(macroboard):
