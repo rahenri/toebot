@@ -123,11 +123,13 @@ def main(args):
 
   games = []
   for _ in range((args.count+1) / 2):
+    g = []
     for i in range(len(bots)):
-      for j in range(len(bots)):
-        if i == j:
-          continue
-        games.append((bots[i], bots[j]))
+      for j in range(i+1, len(bots)):
+        g.append((bots[i], bots[j]))
+        g.append((bots[j], bots[i]))
+    random.shuffle(g)
+    games.extend(g)
 
   pool = multiprocessing.Pool(processes=args.workers) 
 
