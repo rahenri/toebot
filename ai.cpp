@@ -22,8 +22,8 @@ static const int DrawPenalty = 50;
 static const int HashMinDepth = 2;
 
 static const bool PrintSearchTree = false;
-auto DepthShortening = NewIntFlag("depth-shortening", 0);
-auto ShorteningThreshold = NewIntFlag("shortening-threshold", 20000);
+auto DepthShortening = NewIntFlag("depth-shortening", 4);
+auto ShorteningThreshold = NewIntFlag("shortening-threshold", 40000);
 
 const int* MaxDepth = NewIntFlag("max-depth", 100);
 
@@ -61,10 +61,13 @@ struct AI {
   int depth = 0;
   bool shortened = false;
 
+  int depth_shortening;
+  int shortening_threshold;
+
   SearchTreePrinter* printer;
 
   AI(const Board* board, int player, int ply, int time_limit, bool interruptable)
-    : interruptable(interruptable), board(*board), player(player), ply(ply) {
+    : interruptable(interruptable), board(*board), player(player), ply(ply), depth_shortening(*DepthShortening), shortening_threshold(*ShorteningThreshold) {
 
     if (time_limit == 0) {
       this->has_deadline = false;
@@ -121,13 +124,13 @@ struct AI {
     }
     int score;
     bool full_search = true;
-    if (*DepthShortening > 0 && !shortened && depth >= *DepthShortening) {
+    if (depth_shortening > 0 && !shortened && depth >= depth_shortening) {
       shortened = true;
-      depth -= *DepthShortening;
-      score = -this->DeepEval(-(beta+*ShorteningThreshold), -(alpha-*ShorteningThreshold));
-      depth += *DepthShortening;
+      depth -= depth_shortening;
+      score = -this->DeepEval(-(beta+shortening_threshold), -(alpha-shortening_threshold));
+      depth += depth_shortening;
       shortened = false;
-      if  (score < alpha - *ShorteningThreshold || score > beta + *ShorteningThreshold) {
+      if  (score < alpha - shortening_threshold || score > beta + shortening_threshold) {
         full_search = false;
       }
     }
