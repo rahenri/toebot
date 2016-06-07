@@ -61,6 +61,17 @@ class BotProc:
     self._proc.stdin.close()
     self._proc.wait()
 
+def RatingDelta(wins, draws, losses):
+  total = wins+losses+draws
+  if total == 0:
+    return 0
+  if wins+draws == 0 and losses>0:
+    return -1000
+  if losses+draws == 0 and wins>0:
+    return 1000
+
+  score = (wins + draws * 0.5) / float(total)
+  return int(round(-400 * math.log10(1.0 / score - 1.0)))
 
 class Score:
   def __init__(self, left, right):
@@ -73,10 +84,13 @@ class Score:
   def PrintSummary(self):
     ratio = 0
     conf = 0
+    rating = RatingDelta(self.wins, self.draws, self.loses)
+    total = self.wins+self.loses+self.draws
     if self.wins+self.loses>0:
       ratio = float(self.wins) / float(self.wins + self.loses)
       conf = 1.96 * math.sqrt(ratio * (1.0 - ratio) / (self.wins + self.loses))
-    print 'Base({}):{} Test({}):{} Draws:{} Total:{} Ratio:{:.2f}±{:.2f}%'.format(self.left.cmd, self.loses, self.right.cmd, self.wins, self.draws, self.wins+self.loses+self.draws, ratio*100, conf*100)
+
+    print 'Base({}):{} Test({}):{} Draws:{} Total:{} Ratio:{:.2f}±{:.2f}% Rating:{:+d}'.format(self.left.cmd, self.loses, self.right.cmd, self.wins, self.draws, total, ratio*100, conf*100, rating)
 
 
 class ScoreBoard:
@@ -302,8 +316,8 @@ def is_draw(macroboard):
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Run two bots againts each other.')
   parser.add_argument('bots', nargs='+', help='The bots to be tested')
-  parser.add_argument('--count', type=int, default=1, help='Number of times to run the bots (Default: 1)')
-  parser.add_argument('--time-per-move', type=int, default=500, help='Milliseconds added to time bank each turn (Default: 500)')
-  parser.add_argument('--workers', type=int, default=1, help='Number of parallel workers (Default: 1)')
+  parser.add_argument('--count', type=int, default=1000, help='Number of times to run the bots (Default: 1)')
+  parser.add_argument('--time-per-move', type=int, default=1000, help='Milliseconds added to time bank each turn (Default: 500)')
+  parser.add_argument('--workers', type=int, default=2, help='Number of parallel workers (Default: 1)')
   args = parser.parse_args()
   main(args)

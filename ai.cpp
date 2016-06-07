@@ -23,7 +23,7 @@ static const int HashMinDepth = 2;
 
 static const bool PrintSearchTree = false;
 auto DepthShortening = NewIntFlag("depth-shortening", 4);
-auto ShorteningThreshold = NewIntFlag("shortening-threshold", 40000);
+auto ShorteningThreshold = NewIntFlag("shortening-threshold", 50000);
 
 const int* MaxDepth = NewIntFlag("max-depth", 100);
 

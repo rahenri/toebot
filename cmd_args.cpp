@@ -3,6 +3,7 @@
 #include <cerrno>
 #include <string>
 #include <iostream>
+#include <sstream>
 
 using namespace std;
 
@@ -10,6 +11,7 @@ struct AbstractFlag {
   AbstractFlag(const string& name) : name(name) {}
   const string name;
   virtual bool Parse(const string& value) = 0;
+  virtual string String() const = 0;
 };
 
 template <class T>
@@ -22,6 +24,11 @@ struct BaseFlag : public AbstractFlag {
   }
 
   virtual bool Parse(const string& value) = 0;
+  virtual string String() const {
+    stringstream stream;
+    stream << value;
+    return stream.str();
+  }
 };
 
 struct IntFlag : public BaseFlag<int> {
@@ -173,7 +180,12 @@ bool ParseFlags(int argc, const char** argv) {
     }
     if (!flag->Parse(value)) {
       cerr << "Failed to parse flag --" << v << endl;
+      return false;
     }
+  }
+
+  for (int i = 0; i < num_flags; i++) {
+    cerr << "Flag " << all_flags[i]->name << " " << all_flags[i]->String() << endl;
   }
 
   return true;
