@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # coding=utf-8
 
+from __future__ import division
+
 import os
 import sys
 import argparse
@@ -9,9 +11,44 @@ import multiprocessing
 import logging
 import time
 import math
+
 from subprocess import Popen, PIPE, STDOUT
 
 bot_stderr = open('stderr', 'w')
+
+class Estimator:
+  def __init__(self):
+    self.elements = []
+
+  def add(self, item):
+    self.elements.append(item)
+
+  def mean(self):
+    l = len(self)
+    if l == 0:
+      return 0
+    return sum(self.elements) / l
+
+  def mean(self):
+    l = len(self)
+    return sum(self.elements) / l if l else 0.0
+
+  def variance(self):
+    l = len(self)
+    if l == 0:
+      return 0.0
+    m = self.mean()
+    out = 0.0
+    for i in self.elements:
+      d = (i - m)
+      out += d * d
+    return out / l
+
+  def confidence(self):
+    return 1.96 * math.sqrt(self.variance() / len(self)) if len(self) else 0.0
+
+  def __len__(self):
+    return len(self.elements)
 
 class BotInfo:
   def __init__(self, cmd, identity):
@@ -70,7 +107,7 @@ def RatingDelta(wins, draws, losses):
   if losses+draws == 0 and wins>0:
     return 1000
 
-  score = (wins + draws * 0.5) / float(total)
+  score = (wins + draws * 0.5) / total
   return int(round(-400 * math.log10(1.0 / score - 1.0)))
 
 class Score:
@@ -80,17 +117,26 @@ class Score:
     self.draws = 0
     self.left = left
     self.right = right
+    self.estimator = Estimator()
+
+  def add(self, outcome):
+    if outcome == 1:
+      self.wins += 1
+      self.estimator.add(1.0)
+    elif outcome == -1:
+      self.loses += 1
+      self.estimator.add(0.0)
+    elif outcome == 0:
+      self.draws += 1
+      self.estimator.add(0.5)
 
   def PrintSummary(self):
-    ratio = 0
-    conf = 0
+    score = self.estimator.mean()
+    conf = self.estimator.confidence()
     rating = RatingDelta(self.wins, self.draws, self.loses)
     total = self.wins+self.loses+self.draws
-    if self.wins+self.loses>0:
-      ratio = float(self.wins) / float(self.wins + self.loses)
-      conf = 1.96 * math.sqrt(ratio * (1.0 - ratio) / (self.wins + self.loses))
 
-    print 'Base({}):{} Test({}):{} Draws:{} Total:{} Ratio:{:.2f}±{:.2f}% Rating:{:+d}'.format(self.left.cmd, self.loses, self.right.cmd, self.wins, self.draws, total, ratio*100, conf*100, rating)
+    print 'Base({}):{} Test({}):{} Draws:{} Total:{} Score:{:.1f}±{:.1f}% Rating:{:+d}'.format(self.left.cmd, self.loses, self.right.cmd, self.wins, self.draws, total, score*100, conf*100, rating)
 
 
 class ScoreBoard:
@@ -110,11 +156,11 @@ class ScoreBoard:
       b1, b2 = b2, b1
     score = self._get(b1, b2)
     if result == b1.identity:
-      score.loses += 1
+      score.add(-1)
     elif result == b2.identity:
-      score.wins += 1
+      score.add(1)
     elif result == -1:
-      score.draws += 1
+      score.add(0)
     else:
       raise ValueError('Unexpected result %s' % str(result))
 
@@ -136,7 +182,7 @@ def main(args):
   score_board = ScoreBoard()
 
   games = []
-  for _ in range((args.count+1) / 2):
+  for _ in range((args.count+1) // 2):
     g = []
     for i in range(len(bots)):
       for j in range(i+1, len(bots)):
