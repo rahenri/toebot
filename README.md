@@ -67,6 +67,16 @@ Base(./toebot-v25):45 Test(./toebot-v26):471 Draws:484 Total:1000 Ratio:91.28±2
 
 From this experiment, v26 should have +158 more elo points than v25.
 
+Time experiment:
+Base(./toebot-v26 --default-time-limit 100):174 Test(./toebot-v26 --default-time-limit 250):379 Draws:351 Total:904 Score:61.3±2.4% Rating:+80
+Base(./toebot-v26 --default-time-limit 100):85 Test(./toebot-v26 --default-time-limit 500):341 Draws:476 Total:902 Score:64.2±2.0% Rating:+101
+Base(./toebot-v26 --default-time-limit 100):45 Test(./toebot-v26 --default-time-limit 800):497 Draws:361 Total:903 Score:75.0±1.9% Rating:+191
+Base(./toebot-v26 --default-time-limit 250):311 Test(./toebot-v26 --default-time-limit 500):234 Draws:359 Total:904 Score:45.7±2.5% Rating:-30
+Base(./toebot-v26 --default-time-limit 250):82 Test(./toebot-v26 --default-time-limit 800):412 Draws:408 Total:902 Score:68.3±2.1% Rating:+133
+Base(./toebot-v26 --default-time-limit 500):71 Test(./toebot-v26 --default-time-limit 800):158 Draws:675 Total:904 Score:54.8±1.6% Rating:+34
+
+Suprprisingly, the one with 500ms was beaten by the one with 250ms.
+
 - v25
 
 Base(./toebot-v24):676 Test(./toebot-v25):972 Draws:352 Total:2000 Ratio:58.98±2.37%
