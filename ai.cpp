@@ -47,25 +47,16 @@ SearchTreePrinter* tree_printer() {
   return search_tree_printer_single.get();
 }
 
-struct AI {
-  int64_t nodes = 0;
-  int time_limit = 0;
-  int deadline_counter = 0;
-  int initial_player = 0;
-  steady_clock::time_point deadline;
-  bool has_deadline;
-  bool interruptable;
-  Board board;
-  int player;
-  int ply = 0;
-  int depth = 0;
-  bool shortened = false;
+// The AI class contains all state being used when search the tree of moves.
+class AI {
+ public:
 
-  int depth_shortening;
-  int shortening_threshold;
-
-  SearchTreePrinter* printer;
-
+   // Initialize the AI to search a specific board with the the given params
+   // - board: the initial state of the board
+   // - player: the player to play next
+   // - ply: how many moves have been playes so far in the game.
+   // - time_limit: specifies the maximum amount of time to spend on the search in milliseconds, no time limit if zero.
+   // - interruptable: whether the search can be interrupted if the is any data available in the input, used for pondering.
   AI(const Board* board, int player, int ply, int time_limit, bool interruptable)
     : interruptable(interruptable), board(*board), player(player), ply(ply), depth_shortening(*DepthShortening), shortening_threshold(*ShorteningThreshold) {
 
@@ -82,10 +73,84 @@ struct AI {
     }
   }
 
+  // Set the maximum search depth, used for iterative deepening search, where a
+  // sequence of searches is performed from the same position at deeper and
+  // deeper depth.
   void SetMaxDepth(int depth) {
     this->depth = depth;
   }
 
+  // Search the best move from the given paramters given in the constructor.
+  // It can throw exception TimeLimitExceeded if time spent exeeced the time
+  // limit given in the constricutor.
+  // It can throw exception InterrutionRequestedException if interruptable is
+  // true and there is data available to be read from the input.
+  // This functions is similar to DeepEval, the difference is that there is
+  // some differences on the things that needs to be done on the root of the
+  // search tree compared to the rest. Deduping repeated logic by refactoring
+  // them out into functions or merging these functions proved to be less
+  // efficient.
+  SearchResult SearchMove() {
+    if (PrintSearchTree) {
+      printer->Push(&board);
+      printer->Attr("player", player);
+      printer->Attr("ply", ply);
+      printer->Attr("depth", depth);
+      printer->Attr("board", board.BoardRepr());
+      printer->Attr("macro", board.MacroBoardRepr());
+    }
+    this->initial_player = player;
+    SearchResult out;
+    out.score = -MaxScore;
+    out.depth = depth;
+    out.move_count = 0;
+
+    this->nodes++;
+
+    int first_cell = -1;
+    auto memo = HashTableSingleton.Get(&board);
+    if (memo != nullptr) {
+      first_cell = memo->move;
+    }
+
+    if (*AnalysisMode) {
+      cerr << "-------------------------------" << endl;
+      cerr << "Depth: " << depth << endl;
+    }
+
+    uint8_t moves[9*9];
+    int move_count = board.ListMoves(moves, first_cell);
+
+    for (int i = 0; i < move_count; i++) {
+      int cell = moves[i];
+      int alpha = *AnalysisMode ? -MaxScore : out.score;
+      int score = this->DeepEvalRec(moves[i], alpha, MaxScore);
+      if (*AnalysisMode) {
+        cerr << cell << ": " << score << endl;
+      }
+      if (score > out.score || out.move_count == 0) {
+        out.score = score;
+        out.moves[0] = cell;
+        out.move_count = 1;
+      } else if (score == out.score) {
+        out.moves[out.move_count++] = cell;
+      }
+    }
+    HashTableSingleton.Insert(&board, out.score, out.score, depth, out.moves[0]);
+
+    out.nodes = nodes;
+    sort(out.moves, out.moves+out.move_count);
+
+    if (PrintSearchTree) {
+      printer->Pop();
+    }
+    return out;
+  }
+
+ private:
+
+  // Checks whether the search should be interrupted, the appropriate exception
+  // is thrown if so.
   void checkInterruption() {
     this->deadline_counter++;
     if (this->deadline_counter % (1<<14) != 0) {
@@ -107,6 +172,10 @@ struct AI {
     }
   }
 
+  // Recursive call for searching the tree, it updates all internal state to
+  // search the next position and revert those updates at the end. This is done
+  // to avoid copying or a very long list of function arguments that would be
+  // less efficient.
   inline int DeepEvalRec(int cell, int alpha, int beta) {
     auto tick_info = board.tick(cell, player);
     player = 3-player;
@@ -148,6 +217,7 @@ struct AI {
     return score;
   }
 
+  // Performs the actual search in the move tree, it returns the score of the best move found.
   inline int DeepEval(int alpha, int beta) {
     this->nodes++;
     this->checkInterruption();
@@ -240,62 +310,24 @@ struct AI {
     return best_score;
   }
 
-  SearchResult SearchMove() {
-    if (PrintSearchTree) {
-      printer->Push(&board);
-      printer->Attr("player", player);
-      printer->Attr("ply", ply);
-      printer->Attr("depth", depth);
-      printer->Attr("board", board.BoardRepr());
-      printer->Attr("macro", board.MacroBoardRepr());
-    }
-    this->initial_player = player;
-    SearchResult out;
-    out.score = -MaxScore;
-    out.depth = depth;
-    out.move_count = 0;
+  int64_t nodes = 0;
+  int time_limit = 0;
+  int deadline_counter = 0;
+  int initial_player = 0;
+  steady_clock::time_point deadline;
+  bool has_deadline;
+  bool interruptable;
+  Board board;
+  int player;
+  int ply = 0;
+  int depth = 0;
+  bool shortened = false;
 
-    this->nodes++;
+  int depth_shortening;
+  int shortening_threshold;
 
-    int first_cell = -1;
-    auto memo = HashTableSingleton.Get(&board);
-    if (memo != nullptr) {
-      first_cell = memo->move;
-    }
+  SearchTreePrinter* printer;
 
-    if (*AnalysisMode) {
-      cerr << "-------------------------------" << endl;
-      cerr << "Depth: " << depth << endl;
-    }
-
-    uint8_t moves[9*9];
-    int move_count = board.ListMoves(moves, first_cell);
-
-    for (int i = 0; i < move_count; i++) {
-      int cell = moves[i];
-      int alpha = *AnalysisMode ? -MaxScore : out.score;
-      int score = this->DeepEvalRec(moves[i], alpha, MaxScore);
-      if (*AnalysisMode) {
-        cerr << cell << ": " << score << endl;
-      }
-      if (score > out.score || out.move_count == 0) {
-        out.score = score;
-        out.moves[0] = cell;
-        out.move_count = 1;
-      } else if (score == out.score) {
-        out.moves[out.move_count++] = cell;
-      }
-    }
-    HashTableSingleton.Insert(&board, out.score, out.score, depth, out.moves[0]);
-
-    out.nodes = nodes;
-    sort(out.moves, out.moves+out.move_count);
-
-    if (PrintSearchTree) {
-      printer->Pop();
-    }
-    return out;
-  }
 };
 
 std::ostream& operator<<(std::ostream& stream, const SearchResult& res) {
@@ -314,6 +346,8 @@ int SearchResult::RandomMove() const {
   return moves[RandN(move_count)];
 }
 
+// Compute the best move for the given board and player.
+// This is the entry point for the AI search.
 SearchResult SearchMove(const Board *board, int player, SearchOptions opt) {
   int ply = 1;
   for (int i = 0; i < 9*9; i++) {
@@ -324,7 +358,7 @@ SearchResult SearchMove(const Board *board, int player, SearchOptions opt) {
 
   SearchResult out;
 
-  // Lookup opening table;
+  // Lookup opening table, return a move from there if we find a hit.
   if (*EnableOpeningTable && opt.use_open_table) {
     auto item = FindOpeningTable(board->Hash());
     if (item) {
@@ -335,7 +369,7 @@ SearchResult SearchMove(const Board *board, int player, SearchOptions opt) {
       for (int i = 0; i < item->move_count; i++) {
         int m = item->moves[i];
         if (!board->canTick(m)) {
-          cerr << "Invalied move from opening table: " << m << endl;
+          cerr << "Invalid move from opening table: " << m << endl;
           continue;
         }
         out.moves[out.move_count++] = m;
@@ -349,7 +383,12 @@ SearchResult SearchMove(const Board *board, int player, SearchOptions opt) {
   AI ai(board, player, ply, opt.time_limit, opt.interruptable);
   out.move_count = 0;
   auto start = steady_clock::now();
-  for (int depth = 2; depth <= *MaxDepth; depth += 1) {
+
+  // Iterative deepening search. It is better than fixed deptch because of time
+  // constraints, ie, fixed depth can take a variable amount of depth. It is
+  // also better to populate the cache with good moves, which improves
+  // alpha-beta search.
+  for (int depth = 2; depth <= *MaxDepth; depth ++) {
     SearchResult tmp;
     try {
       ai.SetMaxDepth(depth);

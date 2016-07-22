@@ -6,15 +6,15 @@
 #include "board.h"
 
 struct SearchResult {
-  int moves[9*9];
-  int move_count = 0;
-  int score = 0;
-  int64_t nodes = 0;
-  int depth = 0;
-  bool time_limit_exceeded = false;
-  bool manual_interruption = false;
+  int moves[9*9]; // All best moves
+  int move_count = 0; // Number of best moves
+  int score = 0; // Score of the best move.
+  int64_t nodes = 0; // Number of postiions analysed.
+  int depth = 0; // Maximum depth that was fully analysed.
+  bool time_limit_exceeded = false; // Whether time limit was exceeded before finishing the search or reaching maximum depth.
+  bool manual_interruption = false; // Whether the search was interrupted because there was data available in the input.
 
-  int RandomMove() const;
+  int RandomMove() const; // Returns on of the best moves randomly.
 };
 
 
@@ -24,8 +24,8 @@ struct SearchOptions {
   int time_limit = 100;
 };
 
-SearchResult SearchMove(const Board *board, int player, SearchOptions opt = SearchOptions());
-
 std::ostream& operator<<(std::ostream&, const SearchResult&);
+
+SearchResult SearchMove(const Board *board, int player, SearchOptions opt = SearchOptions());
 
 #endif
