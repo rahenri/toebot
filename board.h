@@ -303,6 +303,8 @@ class Board {
     return (player == 1) ? score : -score;
   }
 
+  int ply() const;
+
  private:
 
   void RegenState();

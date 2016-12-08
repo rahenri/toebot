@@ -60,6 +60,8 @@ struct Game {
 
   Board board;
 
+  int turn = 1;
+
   bool update(const vector<string>& args) {
     if (args.size() != 3) {
       cerr << "Wrong number of arguments to update game: " << endl;
@@ -72,7 +74,28 @@ struct Game {
     } else if (name == "move") {
       move = stoi(value);
     } else if (name == "field") {
-      return board.ParseBoard(value);
+      Board copy = board;
+      bool ret = board.ParseBoard(value);
+      int diffs = 0;
+      int diff = -1;
+      int player = 0;
+      for (int i = 0; i < 9*9; i++) {
+        if (copy.Cell(i) == 0 && board.Cell(i) != 0) {
+          diffs ++;
+          diff = i;
+          player = board.Cell(i);
+        } else if (copy.Cell(i) != board.Cell(i)) {
+          diffs ++;
+        }
+      }
+      if (diffs == 1 && diff >= 0) {
+        cerr << "Opponent played cell " << diff << endl;
+        this->turn = player ^ 3;
+      } else {
+        cerr << "Don't know what the opponent played, diffs: " << diffs << endl;
+        this->turn = 2 - (board.ply() % 2);
+      }
+      return ret;
     } else if (name == "macroboard") {
       return board.ParseMacroBoard(value);
     } else {
@@ -82,6 +105,7 @@ struct Game {
   }
 
   bool handleAction(const vector<string>& args) {
+    turn = settings.my_id;
     int time_limit = *DefaultTimeLimit;
     if (args.size() >= 2) {
       time_limit = min(stoi(args[1]) - 50, *DefaultTimeLimit);
@@ -103,6 +127,8 @@ struct Game {
     int row, col;
     decodeCell(move, row, col);
     cout << "place_move " << col << " " << row << endl << flush;
+    this->turn ^= 3;
+    cerr << "Turn is " << this->turn << endl;
     return true;
   }
 
@@ -111,7 +137,7 @@ struct Game {
     if (!board.canTick(cell)) {
       return false;
     }
-    board.tick(cell, 3-settings.my_id);
+    board.tick(cell, settings.my_id^3);
     return true;
   }
 
@@ -123,14 +149,15 @@ struct Game {
     }
   }
 
-  void Ponder() {
+  SearchResult Ponder() {
     cerr << "Start pondering" << endl;
     // Ponder for up to 10 minutes.
     SearchOptions opt;
     opt.interruptable = true;
     opt.time_limit = 60000; // 10 min
-    SearchMove(&board, 3-settings.my_id, opt);
+    auto out = SearchMove(&board, this->turn, opt);
     cerr << "End pondering" << endl;
+    return out;
   }
 };
 
@@ -145,7 +172,7 @@ void handleSelfPlay() {
   while(1) {
     auto t1 = steady_clock::now();
     if (board.isOver()) {
-      cerr << "Player " << (3-player) << " won" << endl;
+      cerr << "Player " << (player^3) << " won" << endl;
       break;
     }
     if (board.IsDrawn()) {
@@ -155,7 +182,7 @@ void handleSelfPlay() {
     SearchOptions opt;
     opt.time_limit = max(*MinTimeLimit, *DefaultTimeLimit);
     SearchResult result = SearchMove(&board, player, opt);
-    if (result.manual_interruption) {
+    if (result.signal_interruption) {
       break;
     }
     if (result.move_count == 0) {
@@ -177,7 +204,7 @@ void handleSelfPlay() {
     cerr << board.BoardRepr() << endl;
     cerr << board.MacroBoardRepr() << endl;
     cerr << endl;
-    player = 3-player;
+    player ^= 3;
     rounds++;
     total_nodes += result.nodes;
   }
@@ -201,11 +228,30 @@ int main(int argc, const char** argv) {
 
   LineReader* reader = &LineReaderSingleton;
 
+  bool ready_to_ponder = false;
+
   while (1) {
-    int ret = reader->ReadLine(&line);
+    bool can_block = (!*EnablePonder) || (!ready_to_ponder);
+    int ret = reader->ReadLine(&line, can_block);
     if (ret == 0) {
       cerr << "EOF, goodbye" << endl;
       break;
+    }
+    if (ret == EAGAIN) {
+      // Nothing to read, so ponder if enabled.
+      if (*EnablePonder) {
+        cerr << "Pondering due to inactivity" << endl;
+        auto result = game->Ponder();
+        if (result.signal_interruption) {
+          ready_to_ponder = false;
+          cerr << "Pondering paused due to SIGINT" << endl;
+        }
+        if (!result.input_interruption) {
+          ready_to_ponder = false;
+          cerr << "Pondering finished naturally" << endl;
+        }
+      }
+      continue;
     }
     if (ret < 0) {
       if (InterruptRequested()) {
@@ -226,10 +272,7 @@ int main(int argc, const char** argv) {
     bool success = true;
     if (name == "action") {
       success = game->handleAction(args);
-      // Ponder
-      if (*EnablePonder) {
-        game->Ponder();
-      }
+      ready_to_ponder = true;
     } else if (name == "settings") {
       game->settings.update(args);
     } else if (name == "update") {

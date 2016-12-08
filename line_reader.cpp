@@ -5,6 +5,8 @@
 
 #include "line_reader.h"
 
+#include <sys/select.h>
+
 using namespace std;
 
 LineReader LineReaderSingleton;
@@ -14,10 +16,13 @@ LineReader::LineReader() {
   fds[0].fd = 0;
   fds[0].events = POLLIN;
 }
-int LineReader::ReadLine(string* str) {
+int LineReader::ReadLine(string* str, bool blocking) {
   str->clear();
   while (1) {
-    int ret = readMoreData();
+    int ret = readMoreData(blocking);
+    if (ret == EAGAIN && !blocking) {
+      return EAGAIN;
+    }
     if (ret < 0) {
       return ret;
     }
@@ -39,17 +44,23 @@ bool LineReader::HasData() {
   if (buffer_end > buffer_start) {
     return true;
   }
-  int ret = poll(fds, 1, 0);
-  if (ret < 0) {
-    cerr << "Poll failed: " << errno << endl;
-    return false;
-  }
-  return ret > 0;
+  return this->poll(0) > 0;
 }
 
-int LineReader::readMoreData() {
+int LineReader::poll(int timeout) {
+  int ret = ::poll(fds, 1, timeout);
+  if (ret < 0) {
+    cerr << "Poll failed: " << errno << endl;
+  }
+  return ret;
+}
+
+int LineReader::readMoreData(bool blocking) {
   if (buffer_end - buffer_start > 0) {
     return buffer_end - buffer_start;
+  }
+  if (!blocking && this->poll(1) <= 0) {
+    return EAGAIN;
   }
   buffer_start = 0;
   int ret = read(0, buffer, sizeof(buffer));

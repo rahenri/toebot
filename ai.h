@@ -12,7 +12,8 @@ struct SearchResult {
   int64_t nodes = 0; // Number of postiions analysed.
   int depth = 0; // Maximum depth that was fully analysed.
   bool time_limit_exceeded = false; // Whether time limit was exceeded before finishing the search or reaching maximum depth.
-  bool manual_interruption = false; // Whether the search was interrupted because there was data available in the input.
+  bool signal_interruption = false; // Whether the search was interrupted because it received sigint.
+  bool input_interruption = false; // Whether the search was interrupted because there was data available in the input.
 
   int RandomMove() const; // Returns on of the best moves randomly.
 };

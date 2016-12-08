@@ -7,14 +7,15 @@
 class LineReader {
   public:
     LineReader();
-    int ReadLine(std::string* str);
+    int ReadLine(std::string* str, bool blocking);
 
     bool HasData();
   private:
-    int readMoreData();
+    int readMoreData(bool blocking);
     char buffer[1024];
     int buffer_start = 0, buffer_end = 0;
     struct pollfd fds[1];
+    int poll(int timeout);
 };
 
 extern LineReader LineReaderSingleton;

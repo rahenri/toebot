@@ -55,8 +55,9 @@ class BotInfo:
     self.cmd = cmd
     self.identity = identity
 
-  def Run(self):
-    return BotProc(self.identity, self.cmd, Popen(self.cmd, shell=True, stdout=PIPE, stdin=PIPE, stderr=bot_stderr))
+  def Run(self, round_id):
+    with open('logs/bot.stderr.{}.{}'.format(self.identity + 1, round_id + 1), 'w') as stderr:
+      return BotProc(self.identity, self.cmd, Popen(self.cmd, shell=True, stdout=PIPE, stdin=PIPE, stderr=stderr))
 
   def __cmp__(self, other):
     return cmp(self.identity, other.identity)
@@ -182,12 +183,14 @@ def main(args):
   score_board = ScoreBoard()
 
   games = []
+  round_id = 0
   for _ in range((args.count+1) // 2):
     g = []
     for i in range(len(bots)):
       for j in range(i+1, len(bots)):
-        g.append((bots[i], bots[j]))
-        g.append((bots[j], bots[i]))
+        g.append((bots[i], bots[j], round_id))
+        g.append((bots[j], bots[i], round_id+1))
+        round_id += 2
     random.shuffle(g)
     games.extend(g)
 
@@ -200,10 +203,10 @@ def main(args):
     score_board.PrintSummary()
 
 
-def OneRound((bot1, bot2)):
+def OneRound((bot1, bot2, round_id)):
   try:
     # Get robots who are fighting (player1, player2)
-    bots = [bot1.Run(), bot2.Run()]
+    bots = [bot1.Run(round_id), bot2.Run(round_id)]
 
     # Simulate game init input
     bots[0].send_init('1', args.time_per_move)

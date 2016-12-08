@@ -35,7 +35,10 @@ const bool* EnableOpeningTable = NewBoolFlag("enable-opening-table", false);
 struct TimeLimitExceeded {
 };
 
-struct InterrutionRequestedException {
+struct IntSignalException {
+};
+
+struct InputException {
 };
 
 unique_ptr<SearchTreePrinter> search_tree_printer_single;
@@ -157,11 +160,11 @@ class AI {
       return;
     }
     if (InterruptRequested()) {
-      throw InterrutionRequestedException();
+      throw IntSignalException();
     }
     if (*EnablePonder && interruptable) {
       if (LineReaderSingleton.HasData()) {
-        throw InterrutionRequestedException();
+        throw InputException();
       }
     }
     if (this->has_deadline) {
@@ -178,7 +181,7 @@ class AI {
   // less efficient.
   inline int DeepEvalRec(int cell, int alpha, int beta) {
     auto tick_info = board.tick(cell, player);
-    player = 3-player;
+    player ^= 3;
     depth--;
     ply++;
     if (PrintSearchTree) {
@@ -210,7 +213,7 @@ class AI {
       printer->Attr("score", score);
       printer->Pop();
     }
-    player = 3-player;
+    player ^= 3;
     depth++;
     ply--;
     board.untick(cell, tick_info);
@@ -349,12 +352,7 @@ int SearchResult::RandomMove() const {
 // Compute the best move for the given board and player.
 // This is the entry point for the AI search.
 SearchResult SearchMove(const Board *board, int player, SearchOptions opt) {
-  int ply = 1;
-  for (int i = 0; i < 9*9; i++) {
-    if (board->Cell(i) != 0) {
-      ply ++;
-    }
-  }
+  int ply = board->ply();;
 
   SearchResult out;
 
@@ -397,9 +395,13 @@ SearchResult SearchMove(const Board *board, int player, SearchOptions opt) {
       cerr << "Search interrupted after reaching time limit of " << opt.time_limit << " milliseconds" << endl;
       out.time_limit_exceeded = true;
       break;
-    } catch (InterrutionRequestedException e) {
+    } catch (IntSignalException e) {
       cerr << "Search manually interrupted" << endl;
-      out.manual_interruption = true;
+      out.signal_interruption = true;
+      break;
+    } catch (InputException e) {
+      cerr << "Search manually interrupted" << endl;
+      out.input_interruption = true;
       break;
     }
     cerr << tmp;

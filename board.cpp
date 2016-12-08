@@ -194,3 +194,13 @@ void InitCaptureMoves() {
 void InitBoardConstants() {
   InitCaptureMoves();
 }
+
+int Board::ply() const {
+  int ply = 1;
+  for (int i = 0; i < 9*9; i++) {
+    if (this->Cell(i) != 0) {
+      ply ++;
+    }
+  }
+  return ply;
+}
