@@ -163,7 +163,7 @@ struct Game {
 
 bool RunTests();
 
-void handleSelfPlay() {
+bool handleSelfPlay() {
   RandSeed(0);
   Board board;
   int player = 1;
@@ -183,7 +183,7 @@ void handleSelfPlay() {
     opt.time_limit = max(*MinTimeLimit, *DefaultTimeLimit);
     SearchResult result = SearchMove(&board, player, opt);
     if (result.signal_interruption) {
-      break;
+      return false;
     }
     if (result.move_count == 0) {
       cerr << "No move found!" << endl;
@@ -209,6 +209,7 @@ void handleSelfPlay() {
     total_nodes += result.nodes;
   }
   cerr << "Rounds: " << rounds << " Total Nodes: " << HumanReadable(total_nodes) << endl;
+  return true;
 }
 
 int main(int argc, const char** argv) {
@@ -294,7 +295,9 @@ int main(int argc, const char** argv) {
         cerr << game->board;
       }
     } else if (name == "self_play") {
-      handleSelfPlay();
+      if (!handleSelfPlay()) {
+        break;
+      }
     } else if (name == "list_moves") {
       game->handleListMoves();
     } else if (name == "gen_opening") {

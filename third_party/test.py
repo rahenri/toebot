@@ -3,18 +3,20 @@
 
 from __future__ import division
 
-import os
-import sys
 import argparse
-import random
-import multiprocessing
+import json
 import logging
-import time
 import math
+import multiprocessing
+import os
+import random
+import sys
+import time
+import traceback
 
 from subprocess import Popen, PIPE, STDOUT
 
-bot_stderr = open('stderr', 'w')
+from datetime import datetime
 
 class Estimator:
   def __init__(self):
@@ -92,7 +94,7 @@ class BotProc:
         time_per_move=time_per_move))
 
     self._proc.stdin.write(update_input)
-    out = self._proc.stdout.readline().strip()
+    out = self._proc.stdout.readline().strip().split(' ', 1)[1]
     return out
 
   def close(self):
@@ -186,25 +188,66 @@ def main(args):
   round_id = 0
   for _ in range((args.count+1) // 2):
     g = []
-    for i in range(len(bots)):
-      for j in range(i+1, len(bots)):
-        g.append((bots[i], bots[j], round_id))
-        g.append((bots[j], bots[i], round_id+1))
-        round_id += 2
+    j = len(bots) - 1
+    for i in range(len(bots)-1):
+      g.append((bots[i], bots[j], round_id))
+      g.append((bots[j], bots[i], round_id+1))
+      round_id += 2
     random.shuffle(g)
     games.extend(g)
 
   pool = multiprocessing.Pool(processes=args.workers) 
 
-  for b1, b2, result in pool.imap(OneRound, games, chunksize=1):
-    score_board.add(b1, b2, result)
 
-    # print summary
-    score_board.PrintSummary()
+  hist_file = datetime.now().strftime('games-%Y%m%d-%H%M%S.txt')
+  hist_path = os.path.join(args.history, hist_file)
 
+  with open(hist_path, 'w') as hist:
+    for b1, b2, result, json in pool.imap(OneRound, games, chunksize=1):
+      score_board.add(b1, b2, result)
+      # print summary
+      score_board.PrintSummary()
+      hist.write(json)
+      hist.write('\n')
+      hist.flush()
+
+class GameInfoBuilder:
+  def __init__(self, bot1, bot2):
+    b1 = {
+        'cmd': bot1.cmd,
+    }
+    b2 = {
+        'cmd': bot1.cmd,
+    }
+    self.game = {
+        'bot1' : b1,
+        'bot2' : b2,
+    }
+    self.rounds = []
+
+  def AddRound(self, field, macro, turn, move):
+    self.rounds.append({
+      'turn' : turn,
+      'field': field,
+      'macro': macro,
+      'move': move,
+    })
+
+  # result is 1 for bot 1, 2 for bot 2, or 0 for draw.
+  def SetResult(self, result):
+    self.game['result'] = result
+
+  def JSon(self):
+    self.game['rounds'] = self.rounds
+    return json.dumps(self.game)
 
 def OneRound((bot1, bot2, round_id)):
+  bots = []
   try:
+    game_info = GameInfoBuilder(bot1, bot2)
+
+    positions = []
+
     # Get robots who are fighting (player1, player2)
     bots = [bot1.Run(round_id), bot2.Run(round_id)]
 
@@ -226,17 +269,18 @@ def OneRound((bot1, bot2, round_id)):
       bot_id = turn+1
       # Send inputs to bot
       move = bot.send_update(round_num, field, macroboard, args.time_per_move)
+      game_info.AddRound(field, macroboard, turn + 1, move)
       # Update macroboard and game field
       field = update_field(field, move, str(bot_id))
       macroboard = update_macroboard(field, move)
       # Check for winner. If winner, exit.
       if is_winner(macroboard):
+        game_info.SetResult(turn+1)
         result = bot.identity
-        bot_stderr.write('Bot %d(%s) won\n' % (bot.identity, bot.cmd))
-        bot_stderr.flush()
         break
 
       if is_draw(macroboard):
+        game_info.SetResult(0)
         result = -1
         break
 
@@ -245,17 +289,18 @@ def OneRound((bot1, bot2, round_id)):
   except KeyboardInterrupt as exp:
     raise RuntimeError("Keyboard Interrupt in child")
   except Exception as exp:
+    traceback.print_exc()
     logging.error(exp)
     raise
   finally:
     for b in bots:
       b.close()
 
-  return bot1, bot2, result
+  return bot1, bot2, result, game_info.JSon()
 
 
 def update_field(field, move, bot_id):
-  col, row = move.split(' ')[1:3]
+  col, row = move.split(' ')
   arr = field.split(',')
   index = int(row) * 9 + int(col)
   if index < 0 or index >= 81:
@@ -307,7 +352,7 @@ def update_macroboard(field, move):
   macroboard = [get_state(b) for b in small_boards]
 
   # modify macro board state based on availability of small board
-  col, row = move.split(' ')[1:3]
+  col, row = move.split(' ')
   index = int(row) * 9 + int(col)
   boards = [
     [0, 3, 6, 27, 30, 33, 54, 57, 60],  # top-left
@@ -368,5 +413,6 @@ if __name__ == '__main__':
   parser.add_argument('--count', type=int, default=1000, help='Number of times to run the bots (Default: 1)')
   parser.add_argument('--time-per-move', type=int, default=1000, help='Milliseconds added to time bank each turn (Default: 500)')
   parser.add_argument('--workers', type=int, default=2, help='Number of parallel workers (Default: 1)')
+  parser.add_argument('--history', default='history', help='Directory to store game history')
   args = parser.parse_args()
   main(args)
