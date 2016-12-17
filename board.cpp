@@ -123,6 +123,7 @@ bool Board::operator==(const Board& other) const {
 }
 
 void Board::RegenState() {
+  macroboard_code = 0;
   for (int i = 0; i < 9; ++i) {
     const int8_t* b = cells + (i*9);
     if (isDone(b, 1)) {
@@ -138,9 +139,17 @@ void Board::RegenState() {
     macroboard_code |= macrocells[i] << (i * 2);
     
     boards_code[i] = 0;
-
     for (int j = 0; j < 9; j++) {
       boards_code[i] |= cells[j + i*9] << (j * 2);
+    }
+  }
+
+  reg_score_inc = reg_cell_bias_int;
+  for (int i = 0; i < 9*9; i++) {
+    if (cells[i] == 1) {
+      reg_score_inc -= reg_cell_score_int[i];
+    } else if(cells[i] == 2) {
+      reg_score_inc += reg_cell_score_int[i];
     }
   }
 

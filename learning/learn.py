@@ -25,20 +25,36 @@ class DataSet:
 
     return self._features[start:end], self._labels[start:end]
 
-class Classifier:
-  def __init__(self, features_count):
-    self.features = tf.placeholder(tf.float32, [None, features_count])
-    self.y_true = tf.placeholder(tf.float32, [None])
 
-    self.W = tf.Variable(tf.random_uniform([features_count], -1.0, 1.0))
+  def __len__(self):
+    return len(self._features)
+
+def infinity():
+  i = 0
+  while True:
+    yield i
+    i += 1
+
+class Classifier:
+  def __init__(self, features_count, rotations_count):
+    self.features = tf.placeholder(tf.float32, [None, rotations_count, features_count], name='features')
+    self.y_true = tf.placeholder(tf.float32, [None], name='y_true')
+
+    self.W = tf.Variable(tf.zeros([features_count]))
     self.b = tf.Variable(tf.zeros([1]))
-    self.y = tf.sigmoid(tf.reduce_sum(self.features * self.W, 1) + self.b)
-    reg = tf.reduce_mean(tf.square(self.W)) * 1.0
+
+    feat_reshaped = tf.reshape(self.features, [-1, features_count])
+    accum = (tf.reduce_sum(feat_reshaped * self.W, 1) + self.b)
+    accum = tf.reshape(accum, [-1, rotations_count])
+    accum = tf.reduce_mean(accum, 1)
+    self.y = tf.sigmoid(accum)
+
+    reg = tf.reduce_mean(tf.abs(self.W))
 
     # Minimize the mean squared errors.
     self.error = tf.reduce_mean(tf.square(self.y - self.y_true))
-    self.loss = self.error + reg
-    optimizer = tf.train.AdamOptimizer(0.01)
+    self.loss = self.error * 100 + reg
+    optimizer = tf.train.AdamOptimizer(0.001)
     self.train = optimizer.minimize(self.loss)
 
     init = tf.global_variables_initializer()
@@ -49,21 +65,36 @@ class Classifier:
   def fit(self, features, y_true):
     data_set = DataSet(features, y_true)
 
+    BATCH_SIZE = 400
     try:
-      for step in range(100000):
-        batchx, batchy = data_set.Next(100)
+      last_improve = 0
+      best_loss = 1.0e10
+      CHECK = 1000
+      for step in infinity():
+        batchx, batchy = data_set.Next(BATCH_SIZE)
         feed = {self.features:batchx, self.y_true:batchy}
         self.sess.run(self.train, feed_dict=feed)
-        if step % 1000 == 0:
+        if step % CHECK == 0 and step > 0:
+          epoch = step // CHECK
           feed = {self.features:data_set._features, self.y_true:data_set._labels}
-          print(step, self.sess.run(self.loss, feed_dict=feed))
+          score = self.sess.run(self.loss, feed_dict=feed)
+          print(step, score)
+          if score < best_loss:
+            best_loss = score
+            last_improve = epoch
+          elif epoch - last_improve > 5:
+            # Stop if it didn't improve for a while
+            break
     except KeyboardInterrupt:
       pass
 
-  def coef(self):
+  
+  @property
+  def coef_(self):
     return self.sess.run(self.W)
 
-  def bias(self):
+  @property
+  def intercept_(self):
     return self.sess.run(self.b)
 
   def predict_proba(self,features):

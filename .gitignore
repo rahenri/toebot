@@ -4,3 +4,8 @@ toebot
 toebot-v*
 toebot.tar.gz
 .d
+__pycache__
+history*
+logs
+out*
+toebot-*
