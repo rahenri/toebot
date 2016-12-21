@@ -152,10 +152,10 @@ class Board {
     boards_code[mcell] ^= player << (bcell * 2);
     if (player == 1) {
       reg_score_inc -= reg_cell_score_int[cell];
-      reg_score_inc += reg_turn_coef_int * 2;
+      reg_score_inc -= reg_turn_coef_int * 2;
     } else {
       reg_score_inc += reg_cell_score_int[cell];
-      reg_score_inc -= reg_turn_coef_int * 2;
+      reg_score_inc += reg_turn_coef_int * 2;
     }
 
     int ret = next_macro;
@@ -215,10 +215,10 @@ class Board {
     draw = false;
     if (player == 1) {
       reg_score_inc += reg_cell_score_int[cell];
-      reg_score_inc -= reg_turn_coef_int * 2;
+      reg_score_inc += reg_turn_coef_int * 2;
     } else {
       reg_score_inc -= reg_cell_score_int[cell];
-      reg_score_inc += reg_turn_coef_int * 2;
+      reg_score_inc -= reg_turn_coef_int * 2;
     }
   }
 
@@ -308,11 +308,14 @@ class Board {
 
 
   inline int Eval(int player) {
-    int score = int(Heuristic() * score_factor) + (reg_score_inc);
+    double base = Heuristic();
+    // double delta = Heuristic2(player);
+    int score = int((base /*+ (delta - base) * reg_delta_coef*/) * score_factor) + (reg_score_inc);
     return (player == 1) ? score : -score;
   }
 
   int ply() const;
+  int turn() const;
 
   inline double Heuristic() {
     double sum = 0.0;
@@ -323,13 +326,46 @@ class Board {
     return sum;
   }
 
+  inline double Heuristic2(int player) {
+    double best = (player == 1) ? -1e9 : 1e9;;
+    if (next_macro == -1) {
+      for (int i = 0; i < 9; i++) {
+        if (macrocells[i] != 0) {
+          continue;
+        }
+        double value = Heuristic2p1(i, player << (best_cell_table[player-1][boards_code[i]]));
+        if (player == 1) {
+          best = max(best, value);
+        } else {
+          best = min(best, value);
+        }
+      }
+    } else {
+      int i = next_macro;
+      best = Heuristic2p1(i, player << (best_cell_table[player-1][boards_code[i]]));
+    }
+    return best;
+  }
+  inline double Heuristic2p1(int macro, int mask) {
+    boards_code[macro] ^= mask;
+    double sum = Heuristic();
+    boards_code[macro] ^= mask;
+    return sum;
+  }
+
   void RegenState();
 
  private:
 
+  // All cells values are either 0(empty), one (cross), two (circle).
+  // Each microboard is consecutive
   int8_t cells[9*9];
+  // Macrocells, values are either 0(empty), one(cross won), two (circle won)
+  // or three(full without winner).
   int8_t macrocells[9];
+  // Next macro cell to play, or -1 if all.
   int8_t next_macro = 9;
+  // Current board hash.
   uint64_t hash;
 
   uint32_t boards_code[9];

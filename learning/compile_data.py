@@ -4,6 +4,7 @@ import numpy as np
 import argparse
 import json
 import score
+import board
 
 def ParseEntry(entry):
   try:
@@ -30,15 +31,31 @@ def ParseGame(game):
     result = 1
   elif outcome == 2:
     result = 0
+  else:
+    return None, None, None, 'invalid outcome'
+
+  cmd1 = game['bot1']['cmd']
+  cmd2 = game['bot2']['cmd']
+  if cmd1 == './toebot':
+    our_player = 1
+  elif cmd2 == './toebot':
+    our_player = 2
+  else:
+    return None, None, None, 'Our player not found'
 
   features = []
   y_true = []
   outcomes = []
   for r in game['rounds']:
+    turn = r['turn']
+    if turn  == our_player:
+      # if it is the opponent's turn, it means *we* took the action that led to
+      # the current board position, so we want to train on that only.
+      continue
     if 'field' not in r:
       return None, None, None, 'missing field'
-    field = [int(c) for c in r['field'].split(',')]
-    cell_features = score.GenFeatures(field)
+    b = board.Board.FromRepr(r['field'], r['macro'], r['turn'])
+    cell_features = score.GenFeatures(b)
     features.append(cell_features)
     y_true.append(result)
     outcomes.append(outcome)
@@ -55,7 +72,6 @@ def main(args):
   y_true = []
   errors = 0
   outcomes = []
-  uniques = set()
   for line in FileLineReader(*args.files):
     game, err = ParseEntry(line)
     if err != None:
@@ -63,6 +79,7 @@ def main(args):
       continue
     feats, y, outs, err = ParseGame(game)
     if err is not None:
+      print(err)
       errors += 1
       continue
     y_true.extend(y)
@@ -70,7 +87,6 @@ def main(args):
     outcomes.extend(outs)
     for i in range(len(feats)):
       key = (feats[i], outs[i])
-      uniques.add(key)
 
   features = np.array(features, dtype='float32')
   y_true = np.array(y_true, dtype='float32')

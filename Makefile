@@ -18,10 +18,9 @@ INPUT_DATA = $(shell find history/ -name '*.txt')
 OUTPUT_DATA = $(patsubst %.txt,%.npz,$(INPUT_DATA))
 
 data: $(OUTPUT_DATA)
-	echo $(OUTPUT_DATA)
 
 clean-data:
-	rm history/*.npz
+	rm -f history/*.npz
 
 %.npz: %.txt learning/compile_data.py
 	@echo "Compiling data $<"

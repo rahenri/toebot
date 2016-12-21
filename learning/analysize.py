@@ -3,6 +3,7 @@
 import argparse
 import numpy as np
 import learn
+import sys
 
 # from  sklearn.linear_model import LogisticRegression
 # from sklearn.ensemble import GradientBoostingClassifier
@@ -35,15 +36,20 @@ def CodeFormat(array, indent='', end=';\n', output=None):
   print(indent + '}', end=end, file=output)
 
 def GenCode(output, coefs, bias):
-  board_coefs = coefs[:81]
   heuristic_coef = coefs[81]
-  turn_coef = coefs[82]
-  board_coefs /= heuristic_coef
+  coefs /= heuristic_coef
   bias /= heuristic_coef
+
+  board_coefs = coefs[:81]
+  turn_coef = 0 #coefs[82]
+  delta_coef = 0 #coefs[1]
+
   output.write('double cell_score[81] = ')
   CodeFormat(board_coefs, output=output)
   output.write('\n')
-  output.write('double turn_coef = {: 2.8f};\n'.format(turn_coef))
+  output.write('double reg_turn_coef = {: 2.8f};\n'.format(turn_coef))
+  output.write('\n')
+  output.write('double reg_delta_coef = {: 2.8f};\n'.format(delta_coef))
   output.write('\n')
   output.write('double reg_cell_bias = {: 2.8f};\n'.format(bias[0]))
   output.write('\n')
@@ -100,6 +106,9 @@ def main(args):
 
   with open('model.cpp', 'w') as f:
     GenCode(f, classifier.coef_, classifier.intercept_)
+
+  print('code:')
+  GenCode(sys.stdout, classifier.coef_, classifier.intercept_)
 
   # skclassifier = LogisticRegression(C=1000.0)
   # skfeatures = features.reshape([-1, len(features[0][0])])

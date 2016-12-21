@@ -6,6 +6,8 @@
 
 double macro_score_table[1<<18];
 
+int8_t best_cell_table[2][1<<18];
+
 double micro_win_prob[1<<18];
 double micro_lose_prob[1<<18];
 
@@ -213,11 +215,37 @@ double ComputeProb(int board, int player, double* table) {
   return score;
 }
 
+int ComputeBestCell(int board, int player) {
+  int best_cell = -1;
+  double best = -1.0;
+  for (int i = 0; i < 9; i++) {
+    int cell = (board >> (i * 2)) & 3;
+    if (cell != 0) {
+      continue;
+    }
+    if (cell == 3) {
+      return 0;
+    }
+    int b2 = board | (player << (i * 2));
+    double score = (player == 1) ? micro_win_prob[b2] : micro_lose_prob[b2];
+    if (score > best) {
+      best = score;
+      best_cell = i;
+    }
+  }
+  return best_cell;
+}
+
 void InitScoreTable() {
   for (int i = (1<<18) - 1; i >= 0; i--) {
     macro_score_table[i] = ComputeMacroScore(i);
     micro_win_prob[i] = ComputeProb(i, 1, micro_win_prob);
     micro_lose_prob[i] = ComputeProb(i, 2, micro_lose_prob);
+  }
+  for (int p = 1; p < 3; p++) {
+    for (int i = 0; i < 1<<18; i++) {
+      best_cell_table[p-1][i] = ComputeBestCell(i, p);
+    }
   }
 
   for (int i = 0; i < 9*9; i++) {

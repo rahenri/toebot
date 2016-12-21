@@ -144,7 +144,13 @@ void Board::RegenState() {
     }
   }
 
+
   reg_score_inc = reg_cell_bias_int;
+  if (turn() == 1) {
+    reg_score_inc += reg_turn_coef_int;
+  } else {
+    reg_score_inc -= reg_turn_coef_int;
+  }
   for (int i = 0; i < 9*9; i++) {
     if (cells[i] == 1) {
       reg_score_inc -= reg_cell_score_int[i];
@@ -212,4 +218,8 @@ int Board::ply() const {
     }
   }
   return ply;
+}
+
+int Board::turn() const {
+  return 2-(ply() % 2);
 }

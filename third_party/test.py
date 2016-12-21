@@ -64,6 +64,9 @@ class BotInfo:
   def __cmp__(self, other):
     return cmp(self.identity, other.identity)
 
+  def __repr__(self):
+    return self.cmd
+
 
 class BotProc:
   def __init__(self, identity, cmd, proc):
@@ -217,7 +220,7 @@ class GameInfoBuilder:
         'cmd': bot1.cmd,
     }
     b2 = {
-        'cmd': bot1.cmd,
+        'cmd': bot2.cmd,
     }
     self.game = {
         'bot1' : b1,
@@ -230,7 +233,7 @@ class GameInfoBuilder:
       'turn' : turn,
       'field': field,
       'macro': macro,
-      'move': move,
+      'last_move': move,
     })
 
   # result is 1 for bot 1, 2 for bot 2, or 0 for draw.
@@ -264,15 +267,16 @@ def OneRound((bot1, bot2, round_id)):
     macroboard = ','.join(['-1'] * 9)
     turn = 0
     result = -1
+    game_info.AddRound(field, macroboard, (turn + 1), '')
     while True:
       bot = bots[turn]
       bot_id = turn+1
       # Send inputs to bot
       move = bot.send_update(round_num, field, macroboard, args.time_per_move)
-      game_info.AddRound(field, macroboard, turn + 1, move)
       # Update macroboard and game field
       field = update_field(field, move, str(bot_id))
       macroboard = update_macroboard(field, move)
+      game_info.AddRound(field, macroboard, (turn + 1) ^ 3, move)
       # Check for winner. If winner, exit.
       if is_winner(macroboard):
         game_info.SetResult(turn+1)

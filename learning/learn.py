@@ -49,10 +49,10 @@ class Classifier:
     accum = tf.reduce_mean(accum, 1)
     self.y = tf.sigmoid(accum)
 
-    reg = tf.reduce_mean(tf.abs(self.W))
+    reg = tf.reduce_mean(tf.square(self.W))
 
     # Minimize the mean squared errors.
-    self.error = tf.reduce_mean(tf.square(self.y - self.y_true))
+    self.error = tf.reduce_mean(tf.abs(self.y - self.y_true))
     self.loss = self.error * 100 + reg
     optimizer = tf.train.AdamOptimizer(0.001)
     self.train = optimizer.minimize(self.loss)

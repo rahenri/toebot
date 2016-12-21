@@ -15,8 +15,6 @@ def AllocArray(*dim, value=None):
 
 micro_prob_table = AllocArray(2, 1<<18, value=None)
 
-probs = (0.0, 0.5, 0.5, 0.0)
-
 def ComputeWinProb(b, player):
   got = micro_prob_table[player-1][b]
   if got is not None:
@@ -45,6 +43,29 @@ def ComputeWinProb(b, player):
   micro_prob_table[player-1][b] = score
   return score
 
+best_cell_table = AllocArray(2, 1<<18, value=None)
+
+def BestCell(b, player):
+  code = board.EncodeBoard(b)
+
+  got = best_cell_table[player-1][code]
+  if got is not None:
+    return got
+
+  best = -1
+  best_cell = 0
+  for i in range(9):
+    if b[i] != 0:
+      continue
+    t = ComputeWinProb(code | (player << (i * 2)), player)
+    if t > best:
+      best = t
+      best_cell = i
+  
+  best_cell_table[player-1][code] = best_cell
+
+  return best_cell
+
 WIN_LINES = (
   (0, 1, 2),
   (3, 4, 5),
@@ -67,23 +88,38 @@ def HeuristicFeature(b):
     sum += p1 - p2
   return sum
 
-def BoardFeatures(b):
-    out = [CellFeature(c) for c in board.FlattenBoards(b)]
-    out.append(HeuristicFeature(b))
-    return tuple(out)
+def HeuristicFeature2(b):
+  base = HeuristicFeature(b)
+  best = 0
+  for macro in range(9):
+    if b.macro_cells[macro] != -1:
+      continue
+    sb = b.boards[macro]
+    i = BestCell(sb, b.turn)
+    b.Tick(macro, i, b.turn)
+    h = HeuristicFeature(b) - base
+    if abs(h) > abs(best):
+      best = h
+    b.Tick(macro, i, 0)
+  return best
 
-def GenFeatures(field):
-  count = 0
-  for c in field:
-    if c != 0:
-      count += 1
-  turn_feature = (count % 2) * 2 - 1
+def BoardFeatures(b):
+  out = [CellFeature(c) for c in board.FlattenBoards(b)]
+  return out
+
+def GenFeatures(b):
+  assert type(b) == board.Board
   out = []
-  for field in board.FieldRotations(field):
-    b = board.SplitMacroBoard(field)
-    out.append(BoardFeatures(b))
-    out.append(turn)
-  return tuple(sorted(out))
+  non_rot_features = [
+      HeuristicFeature(b),
+      # CellFeature(b.turn),
+      # HeuristicFeature2(b),
+  ]
+  for br in board.BoardRotations(b):
+    features = BoardFeatures(br)
+    features.extend(non_rot_features)
+    out.append(features)
+  return out
 
 def run_tests():
   weights = (
@@ -107,7 +143,7 @@ def run_tests():
    0.05068658, 0.08984444, 0.07071941, 0.08979738,
    0.09687658, 0.07195589, 0.08471585, 0.07956100,
    0.11313322, 0.10907569, 0.08203788, 0.11869538,
-   0.10840571, 1.0)
+   0.10840571, 1.0, 0.2)
   bias = -0.19994880;
 
   field = "1,0,0,2,0,0,0,1,0,1,0,0,2,0,1,0,0,0,0,2,1,2,2,0,0,0,0,0,1,2,2,0,0,0,1,0,1,0,2,0,1,0,2,0,2,0,1,0,0,0,0,0,1,0,1,0,0,2,1,0,0,2,0,0,0,0,2,0,1,0,0,0,0,0,0,0,0,0,0,0,0"
@@ -122,6 +158,8 @@ def run_tests():
     s += feats[0][i] * weights[i]
 
   print(int(s * 1000000))
+
+  print(BoardFeatures(b))
 
 if __name__ == '__main__':
   run_tests()
