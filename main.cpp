@@ -263,6 +263,8 @@ int main(int argc, const char** argv) {
       continue;
     }
 
+    cerr << line << endl;
+
     steady_clock::time_point t1 = steady_clock::now();
     vector<string> command = parseLine(line);
     if (command.size() == 0) {

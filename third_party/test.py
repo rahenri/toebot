@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # coding=utf-8
 
 from __future__ import division
@@ -53,19 +53,21 @@ class Estimator:
     return len(self.elements)
 
 class BotInfo:
-  def __init__(self, cmd, identity):
+  def __init__(self, cmd, identity, display_name = None):
     self.cmd = cmd
     self.identity = identity
+    self.display_name = display_name or cmd
 
-  def Run(self, round_id):
-    with open('logs/bot.stderr.{}.{}'.format(self.identity + 1, round_id + 1), 'w') as stderr:
-      return BotProc(self.identity, self.cmd, Popen(self.cmd, shell=True, stdout=PIPE, stdin=PIPE, stderr=stderr))
+  def Run(self, round_id, side):
+    with open('logs/bot.stderr.{}.{}.{}'.format(self.identity + 1, round_id + 1, side), 'w') as stderr:
+      proc = Popen(self.cmd, shell=True, stdout=PIPE, stdin=PIPE, stderr=stderr, universal_newlines=True, bufsize=1)
+      return BotProc(self.identity, self.display_name, proc)
 
   def __cmp__(self, other):
     return cmp(self.identity, other.identity)
 
   def __repr__(self):
-    return self.cmd
+    return self.display_name
 
 
 class BotProc:
@@ -97,7 +99,13 @@ class BotProc:
         time_per_move=time_per_move))
 
     self._proc.stdin.write(update_input)
-    out = self._proc.stdout.readline().strip().split(' ', 1)[1]
+
+    while True:
+      line = self._proc.stdout.readline().strip()
+      if line:
+        break
+
+    out = line.strip().split(' ', 1)[1]
     return out
 
   def close(self):
@@ -124,25 +132,32 @@ class Score:
     self.left = left
     self.right = right
     self.estimator = Estimator()
+    self.estimator_nodraw = Estimator()
 
   def add(self, outcome):
     if outcome == 1:
       self.wins += 1
       self.estimator.add(1.0)
+      self.estimator_nodraw.add(1.0)
     elif outcome == -1:
       self.loses += 1
       self.estimator.add(0.0)
+      self.estimator_nodraw.add(0.0)
     elif outcome == 0:
       self.draws += 1
       self.estimator.add(0.5)
+    else:
+      raise ValueError('Unexpected outcome value')
 
   def PrintSummary(self):
     score = self.estimator.mean()
     conf = self.estimator.confidence()
+    score_nodraw = self.estimator_nodraw.mean()
+    conf_nodraw = self.estimator_nodraw.confidence()
     rating = RatingDelta(self.wins, self.draws, self.loses)
     total = self.wins+self.loses+self.draws
 
-    print 'Base({}):{} Test({}):{} Draws:{} Total:{} Score:{:.1f}±{:.1f}% Rating:{:+d}'.format(self.left.cmd, self.loses, self.right.cmd, self.wins, self.draws, total, score*100, conf*100, rating)
+    print('Base({}):{} Test({}):{} Draws:{} Total:{} Score:{:.1f}±{:.1f}% ScoreNoDraw:{:.1f}±{:.1f}% Rating:{:+d}'.format(self.left.display_name, self.loses, self.right.display_name, self.wins, self.draws, total, score*100, conf*100, score_nodraw*100, conf_nodraw*100, rating))
 
 
 class ScoreBoard:
@@ -171,40 +186,79 @@ class ScoreBoard:
       raise ValueError('Unexpected result %s' % str(result))
 
   def PrintSummary(self):
-    print '-' * 80
+    print('-' * 80)
     for key in sorted(self._score):
       score = self._score[key]
       score.PrintSummary()
     sys.stdout.flush()
 
 
+def ParseBots(args):
+  if args.bots:
+    bots = []
+    identity = 0
+    for cmd in args.bots:
+      bots.append(BotInfo(cmd, identity))
+      identity += 1
+
+    games = []
+    round_id = 0
+    for _ in range((args.count+1) // 2):
+      g = []
+      j = len(bots) - 1
+      for i in range(len(bots)-1):
+        g.append((bots[i], bots[j], round_id))
+        g.append((bots[j], bots[i], round_id+1))
+        round_id += 2
+      random.shuffle(g)
+      games.extend(g)
+  elif args.config:
+    with open(args.config, 'r') as f:
+      config = json.loads(f.read())
+
+    bots = {}
+    identity = 0
+    for bot in config['bots']:
+      cmd = bot['cmd']
+      name = bot['name']
+      info = BotInfo(cmd, identity, name)
+      if name in bots:
+        raise(ValueError('Duplicated bot name: {}'.format(name)))
+      bots[name] = info
+      identity += 1
+
+
+    raw_pairs = config['pairs']
+    pairs = []
+    for pair in raw_pairs:
+      p1 = bots[pair[0]]
+      p2 = bots[pair[1]]
+      pairs.append((p1, p2))
+
+    games = []
+    round_id = 0
+    for _ in range((args.count+1) // 2):
+      g = []
+      for pair in pairs:
+        g.append((pair[0], pair[1], round_id))
+        g.append((pair[1], pair[0], round_id+1))
+        round_id += 2
+      random.shuffle(g)
+      games.extend(g)
+  else:
+    raise(ValueError("No bots or config provided"))
+
+  return games
+
 def main(args):
-  bots = []
-  identity = 0
-  for cmd in args.bots:
-    bots.append(BotInfo(cmd, identity))
-    identity += 1
-
-  score_board = ScoreBoard()
-
-  games = []
-  round_id = 0
-  for _ in range((args.count+1) // 2):
-    g = []
-    j = len(bots) - 1
-    for i in range(len(bots)-1):
-      g.append((bots[i], bots[j], round_id))
-      g.append((bots[j], bots[i], round_id+1))
-      round_id += 2
-    random.shuffle(g)
-    games.extend(g)
+  games = ParseBots(args)
 
   pool = multiprocessing.Pool(processes=args.workers) 
-
 
   hist_file = datetime.now().strftime('games-%Y%m%d-%H%M%S.txt')
   hist_path = os.path.join(args.history, hist_file)
 
+  score_board = ScoreBoard()
   with open(hist_path, 'w') as hist:
     for b1, b2, result, json in pool.imap(OneRound, games, chunksize=1):
       score_board.add(b1, b2, result)
@@ -244,7 +298,9 @@ class GameInfoBuilder:
     self.game['rounds'] = self.rounds
     return json.dumps(self.game)
 
-def OneRound((bot1, bot2, round_id)):
+def OneRound(params):
+  bot1, bot2, round_id = params
+
   bots = []
   try:
     game_info = GameInfoBuilder(bot1, bot2)
@@ -252,7 +308,7 @@ def OneRound((bot1, bot2, round_id)):
     positions = []
 
     # Get robots who are fighting (player1, player2)
-    bots = [bot1.Run(round_id), bot2.Run(round_id)]
+    bots = [bot1.Run(round_id, 1), bot2.Run(round_id, 2)]
 
     # Simulate game init input
     bots[0].send_init('1', args.time_per_move)
@@ -413,10 +469,11 @@ def is_draw(macroboard):
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Run two bots againts each other.')
-  parser.add_argument('bots', nargs='+', help='The bots to be tested')
+  parser.add_argument('bots', nargs='*', help='The bots to be tested')
   parser.add_argument('--count', type=int, default=1000, help='Number of times to run the bots (Default: 1)')
   parser.add_argument('--time-per-move', type=int, default=1000, help='Milliseconds added to time bank each turn (Default: 500)')
   parser.add_argument('--workers', type=int, default=2, help='Number of parallel workers (Default: 1)')
   parser.add_argument('--history', default='history', help='Directory to store game history')
+  parser.add_argument('--config', help='Config file with bots to test')
   args = parser.parse_args()
   main(args)
