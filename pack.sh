@@ -4,4 +4,6 @@ output=toebot.tar.gz
 
 rm -rf ${output}
 
-tar -czf ${output} *.h *.cpp
+FILES=$(find .  | grep '\.\(h\|cpp\)$' | grep -v '_test\/cpp$')
+
+tar -czf ${output} ${FILES}
