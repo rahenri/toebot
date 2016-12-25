@@ -25,6 +25,8 @@ static const bool PrintSearchTree = false;
 auto DepthShortening = NewIntFlag("depth-shortening", 4);
 auto ShorteningThreshold = NewIntFlag("shortening-threshold", 50000);
 
+auto EnableMoveSorting = NewBoolFlag("enable-move-sorting", false);
+
 const int* MaxDepth = NewIntFlag("max-depth", 100);
 
 const bool* AnalysisMode = NewBoolFlag("analysis", false);
@@ -50,6 +52,24 @@ SearchTreePrinter* tree_printer() {
   return search_tree_printer_single.get();
 }
 
+static const int MinDepthSortMoves = 2;
+
+int move_table[81];
+
+inline void RewardMove(uint8_t cell) {
+  move_table[cell]++;
+}
+
+struct MoveSorter {
+  inline bool operator()(int m1, int m2) const {
+    return move_table[m1] > move_table[m2];
+  }
+};
+
+inline void SortMoves(uint8_t* moves, int count) {
+  sort(moves, moves+count, MoveSorter());
+}
+
 // The AI class contains all state being used when search the tree of moves.
 class AI {
  public:
@@ -61,7 +81,7 @@ class AI {
    // - time_limit: specifies the maximum amount of time to spend on the search in milliseconds, no time limit if zero.
    // - interruptable: whether the search can be interrupted if the is any data available in the input, used for pondering.
   AI(const Board* board, int player, int ply, int time_limit, bool interruptable)
-    : interruptable(interruptable), board(*board), player(player), ply(ply), depth_shortening(*DepthShortening), shortening_threshold(*ShorteningThreshold) {
+    : interruptable(interruptable), board(*board), player(player), ply(ply), depth_shortening(*DepthShortening), shortening_threshold(*ShorteningThreshold), enable_move_sorting(*EnableMoveSorting) {
 
     if (time_limit == 0) {
       this->has_deadline = false;
@@ -124,6 +144,14 @@ class AI {
     uint8_t moves[9*9];
     int move_count = board.ListMoves(moves, first_cell);
 
+    if (enable_move_sorting && depth >= MinDepthSortMoves) {
+      if (first_cell != -1) {
+        SortMoves(moves+1, move_count-1);
+      } else {
+        SortMoves(moves, move_count);
+      }
+    }
+
     for (int i = 0; i < move_count; i++) {
       int cell = moves[i];
       int alpha = *AnalysisMode ? -MaxScore : out.score;
@@ -138,6 +166,9 @@ class AI {
       } else if (score == out.score) {
         out.moves[out.move_count++] = cell;
       }
+    }
+    if (enable_move_sorting && depth >= MinDepthSortMoves) {
+      RewardMove(out.moves[0]);
     }
     HashTableSingleton.Insert(&board, out.score, out.score, depth, out.moves[0]);
 
@@ -285,6 +316,14 @@ class AI {
       move_count = board.ListMoves(moves, first_cell);
     }
 
+    if (enable_move_sorting && depth >= MinDepthSortMoves) {
+      if (first_cell != -1) {
+        SortMoves(moves+1, move_count-1);
+      } else {
+        SortMoves(moves, move_count);
+      }
+    }
+
     int best_move = -1;
     for (int i = 0; i < move_count; i++) {
       int cell = moves[i];
@@ -297,6 +336,9 @@ class AI {
           break;
         }
       }
+    }
+    if (enable_move_sorting && depth >= MinDepthSortMoves) {
+      RewardMove(best_move);
     }
     if (depth >= HashMinDepth) {
       int lower_bound = -MaxScore;
@@ -319,15 +361,17 @@ class AI {
   int initial_player = 0;
   steady_clock::time_point deadline;
   bool has_deadline;
-  bool interruptable;
+  const bool interruptable;
   Board board;
   int player;
   int ply = 0;
   int depth = 0;
   bool shortened = false;
 
-  int depth_shortening;
-  int shortening_threshold;
+  const int depth_shortening;
+  const int shortening_threshold;
+
+  const bool enable_move_sorting;
 
   SearchTreePrinter* printer;
 
