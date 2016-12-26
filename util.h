@@ -28,6 +28,9 @@ inline void decodeCell(cell c, int& row, int& col) {
 
 template <class T>
 string HumanReadable(T number) {
+  if (number == 0) {
+    return "0";
+  }
   bool neg = number < 0;
   if (neg) number = -number;
   string output;

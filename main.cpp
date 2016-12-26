@@ -19,8 +19,6 @@
 using namespace std;
 using namespace std::chrono;
 
-const int* MinTimeLimit = NewIntFlag("min-time-limit", 0);
-const int* DefaultTimeLimit = NewIntFlag("default-time-limit", 800);
 
 struct Settings {
   int time_bank = 10000;
@@ -137,7 +135,17 @@ struct Game {
     if (!board.canTick(cell)) {
       return false;
     }
-    board.tick(cell, settings.my_id^3);
+    board.tick(cell, this->turn);
+    this->turn ^= 3;
+    return true;
+  }
+
+  bool opponentMove(int cell) {
+    if (!board.canTick(cell)) {
+      return false;
+    }
+    board.tick(cell, this->turn);
+    this->turn ^= 3;
     return true;
   }
 
@@ -151,10 +159,9 @@ struct Game {
 
   SearchResult Ponder() {
     cerr << "Start pondering" << endl;
-    // Ponder for up to 10 minutes.
     SearchOptions opt;
     opt.interruptable = true;
-    opt.time_limit = 60000; // 10 min
+    opt.time_limit = 6000000; // 100 min
     auto out = SearchMove(&board, this->turn, opt);
     cerr << "End pondering" << endl;
     return out;
@@ -286,6 +293,13 @@ int main(int argc, const char** argv) {
         cerr << "Tests pass" << endl;
       } else {
         cerr << "Tests failed" << endl;
+      }
+    } else if (name == "user_action") {
+      int val = stoi(args[0]);
+      if (!game->opponentMove(val)) {
+        cerr << "Move failed" << endl;
+      } else {
+        cerr << game->board;
       }
     } else if (name == "move") {
       int row = stoi(args[0]);

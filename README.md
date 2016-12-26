@@ -4,6 +4,25 @@ Toebot is an AI for palying ultimate tic tac toe game in the theaigames.com comp
 
 # Progress
 
+- v31
+
+Experimenting with pondering and sorting:
+
+```
+Base(v30):86 Test(sorting):74 Draws:130 Total:290 Score:47.9±4.3% ScoreNoDraw:46.2±7.7% Rating:-14
+Base(v30):74 Test(pondering):104 Draws:114 Total:292 Score:55.1±4.4% ScoreNoDraw:58.4±7.2% Rating:+36
+Base(v30):121 Test(pondering-sorting):102 Draws:68 Total:291 Score:46.7±5.0% ScoreNoDraw:45.7±6.5% Rating:-23
+```
+
+Experimenting with conservative hash:
+
+```
+Base(toebot-aggressive):252 Test(toebot-pondering-sorting-conservative):496 Draws:252 Total:1000 Score:62.2±2.6% ScoreNoDraw:66.3±3.4% Rating:+87
+```
+
+
+
+
 - v27 Candidate
 
 I decided to explore pondering a little more, this is what I get comparing pondering vs pondering with effectively one cpu per game:
