@@ -20,7 +20,11 @@ Experimenting with conservative hash:
 Base(toebot-aggressive):252 Test(toebot-pondering-sorting-conservative):496 Draws:252 Total:1000 Score:62.2±2.6% ScoreNoDraw:66.3±3.4% Rating:+87
 ```
 
+```
+Base(v30):301 Test(v31):433 Draws:266 Total:1000 Score:56.6±2.6% ScoreNoDraw:59.0±3.6% Rating:+46
+Base(v26):143 Test(v31):487 Draws:370 Total:1000 Score:67.2±2.2% ScoreNoDraw:77.3±3.3% Rating:+125
 
+```
 
 
 - v27 Candidate
