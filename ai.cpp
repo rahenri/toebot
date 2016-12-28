@@ -69,13 +69,13 @@ class AI {
    // - ply: how many moves have been playes so far in the game.
    // - time_limit: specifies the maximum amount of time to spend on the search in milliseconds, no time limit if zero.
    // - interruptable: whether the search can be interrupted if the is any data available in the input, used for pondering.
-  AI(const Board* board, int player, int ply, int time_limit, bool interruptable)
+  AI(const Board* board, int player, int ply, int time_limit, bool interruptable, int ponder)
     : interruptable(interruptable),
       board(*board), player(player),
       ply(ply),
       depth_shortening(*DepthShortening),
       shortening_threshold(*ShorteningThreshold),
-      pondering(interruptable) {
+      pondering(ponder) {
 
     if (time_limit == 0) {
       this->has_deadline = false;
@@ -127,12 +127,12 @@ class AI {
     int first_cell = -1;
     auto memo = HashTableSingleton.Get(&board);
     if (memo != nullptr) {
-      if (memo->depth >= depth) {
+      if (!pondering && memo->depth >= depth) {
         if (memo->lower_bound == memo->upper_bound) {
           out.score = memo->lower_bound;
           out.moves[0] = memo->move;
           out.move_count = 1;
-          out.nodes = 1;
+          out.nodes = this->nodes;
           return out;
         }
       }
@@ -157,7 +157,7 @@ class AI {
 
     for (int i = 0; i < move_count; i++) {
       int cell = moves[i];
-      int alpha = (*AnalysisMode || pondering) ? -MaxScore : out.score;
+      int alpha = (*AnalysisMode) ? -MaxScore : out.score;
       int score = this->DeepEvalRec(moves[i], alpha, MaxScore);
       if (*AnalysisMode) {
         cerr << cell << ": " << score << endl;
@@ -188,7 +188,7 @@ class AI {
 
   // Checks whether the search should be interrupted, the appropriate exception
   // is thrown if so.
-  void checkInterruption() {
+  inline void checkInterruption() {
     this->deadline_counter++;
     if (this->deadline_counter % (1<<14) != 0) {
       return;
@@ -196,7 +196,7 @@ class AI {
     if (InterruptRequested()) {
       throw IntSignalException();
     }
-    if (*EnablePonder && interruptable) {
+    if (interruptable) {
       if (LineReaderSingleton.HasData()) {
         throw InputException();
       }
@@ -213,59 +213,67 @@ class AI {
   // search the next position and revert those updates at the end. This is done
   // to avoid copying or a very long list of function arguments that would be
   // less efficient.
-  inline int DeepEvalRec(int cell, int alpha, int beta) {
+  int DeepEvalRec(int cell, int alpha, int beta) {
+    this->nodes++;
+    this->checkInterruption();
+
     auto tick_info = board.tick(cell, player);
-    player ^= 3;
-    depth--;
-    ply++;
-    if (PrintSearchTree) {
-      printer->Push(&board);
-      printer->Attr("player", player);
-      printer->Attr("ply", ply);
-      printer->Attr("depth", depth);
-      printer->Attr("alpha", alpha);
-      printer->Attr("beta", beta);
-      printer->Attr("board", board.BoardRepr());
-      printer->Attr("macro", board.MacroBoardRepr());
-    }
     int score;
-    bool full_search = true;
-    if (depth_shortening > 0 && !shortened && depth >= depth_shortening) {
-      shortened = true;
-      depth -= depth_shortening;
-      score = -this->DeepEval(-(beta+shortening_threshold), -(alpha-shortening_threshold));
-      depth += depth_shortening;
-      shortened = false;
-      if  (score < alpha - shortening_threshold || score > beta + shortening_threshold) {
-        full_search = false;
+
+    if (board.isOver()) {
+      score = MaxScore - ply;
+    } else if (board.IsDrawn()) {
+      score = -DrawPenalty;
+    } else {
+      player ^= 3;
+      depth--;
+      ply++;
+      if (PrintSearchTree) {
+        printer->Push(&board);
+        printer->Attr("player", player);
+        printer->Attr("ply", ply);
+        printer->Attr("depth", depth);
+        printer->Attr("alpha", alpha);
+        printer->Attr("beta", beta);
+        printer->Attr("board", board.BoardRepr());
+        printer->Attr("macro", board.MacroBoardRepr());
       }
+      bool full_search = true;
+      if (depth_shortening > 0 && !shortened && depth >= depth_shortening && !pondering) {
+        shortened = true;
+        depth -= depth_shortening;
+        score = -this->DeepEval(-(beta+shortening_threshold), -(alpha-shortening_threshold));
+        depth += depth_shortening;
+        shortened = false;
+        if  (score < alpha - shortening_threshold || score > beta + shortening_threshold) {
+          full_search = false;
+        }
+      }
+      if (full_search) {
+        if (pondering) {
+          pondering = false;
+          // Perform a complete search if pondering.
+          auto result = SearchMove();
+          score = -result.score;
+          pondering = true;
+        } else {
+          score = -this->DeepEval(-beta, -alpha);
+        }
+      }
+      if (PrintSearchTree) {
+        printer->Attr("score", score);
+        printer->Pop();
+      }
+      player ^= 3;
+      depth++;
+      ply--;
     }
-    if (full_search) {
-      score = -this->DeepEval(-beta, -alpha);
-    }
-    if (PrintSearchTree) {
-      printer->Attr("score", score);
-      printer->Pop();
-    }
-    player ^= 3;
-    depth++;
-    ply--;
     board.untick(cell, tick_info);
     return score;
   }
 
   // Performs the actual search in the move tree, it returns the score of the best move found.
   inline int DeepEval(int alpha, int beta) {
-    this->nodes++;
-    this->checkInterruption();
-
-    if (board.isOver()) {
-      return -MaxScore + ply;
-    }
-
-    if (board.IsDrawn()) {
-      return DrawPenalty;
-    }
 
     {
       int upper_bound = MaxScore - (ply + 1);
@@ -374,7 +382,7 @@ class AI {
   const int depth_shortening;
   const int shortening_threshold;
 
-  const bool pondering;
+  bool pondering;
 
   SearchTreePrinter* printer;
 
@@ -399,7 +407,7 @@ int SearchResult::RandomMove() const {
 // Compute the best move for the given board and player.
 // This is the entry point for the AI search.
 SearchResult SearchMove(const Board *board, int player, SearchOptions opt) {
-  int ply = board->ply();;
+  int ply = board->ply();
 
   SearchResult out;
 
@@ -425,7 +433,7 @@ SearchResult SearchMove(const Board *board, int player, SearchOptions opt) {
     }
   }
 
-  AI ai(board, player, ply, opt.time_limit, opt.interruptable);
+  AI ai(board, player, ply, opt.time_limit, opt.interruptable, opt.pondering);
   out.move_count = 0;
   auto start = steady_clock::now();
 

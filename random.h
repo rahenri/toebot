@@ -12,7 +12,7 @@ inline int32_t RandInt32() {
   return distribution(generator);
 }
 
-inline int32_t RandInt64() {
+inline int64_t RandInt64() {
   std::uniform_int_distribution<int64_t> distribution(0, std::numeric_limits<int64_t>::max());
   return distribution(generator);
 }

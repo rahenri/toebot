@@ -158,10 +158,15 @@ struct Game {
   }
 
   SearchResult Ponder() {
+    if (board.IsDrawn() or board.isOver()) {
+      cerr << "Game is over, nothing to ponder about" << endl;
+      return SearchResult();
+    }
     cerr << "Start pondering" << endl;
     SearchOptions opt;
     opt.interruptable = true;
     opt.time_limit = 6000000; // 100 min
+    opt.pondering = true;
     auto out = SearchMove(&board, this->turn, opt);
     cerr << "End pondering" << endl;
     return out;

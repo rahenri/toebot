@@ -101,7 +101,10 @@ class BotProc:
     self._proc.stdin.write(update_input)
 
     while True:
-      line = self._proc.stdout.readline().strip()
+      line = self._proc.stdout.readline()
+      if not line:
+        raise RuntimeError('Process has crashed!')
+      line = line.strip()
       if line:
         break
 

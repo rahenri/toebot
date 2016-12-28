@@ -191,3 +191,16 @@ base(./toebot-v23):376 test(./toebot-v25):1255 draws:369 total:2000 ratio:76.95Â
 - v24
 
 base(./toebot-v23):377 test(./toebot-v24):834 draws:789 total:2000 ratio:68.87Â±2.61%
+
+
+
+## Benchmark
+
+```
+./bench.sh
+Player 1 won
+Rounds: 53 Total Nodes: 75,574,130
+Command took 8238.84 milliseconds.
+```
+
+

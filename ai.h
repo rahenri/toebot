@@ -23,6 +23,7 @@ struct SearchOptions {
   bool use_open_table = true;
   bool interruptable = false;
   int time_limit = 100;
+  bool pondering = false;
 };
 
 std::ostream& operator<<(std::ostream&, const SearchResult&);
