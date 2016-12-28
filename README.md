@@ -23,7 +23,9 @@ Base(toebot-aggressive):252 Test(toebot-pondering-sorting-conservative):496 Draw
 ```
 Base(v30):301 Test(v31):433 Draws:266 Total:1000 Score:56.6±2.6% ScoreNoDraw:59.0±3.6% Rating:+46
 Base(v26):143 Test(v31):487 Draws:370 Total:1000 Score:67.2±2.2% ScoreNoDraw:77.3±3.3% Rating:+125
-
+Base(v31):201 Test(candidate):352 Draws:447 Total:1000 Score:57.6±2.3% ScoreNoDraw:63.7±4.0% Rating:+53
+Base(v30):295 Test(candidate):375 Draws:330 Total:1000 Score:54.0±2.5% ScoreNoDraw:56.0±3.8% Rating:+28
+Base(v26):141 Test(candidate):504 Draws:355 Total:1000 Score:68.2±2.2% ScoreNoDraw:78.1±3.2% Rating:+132
 ```
 
 

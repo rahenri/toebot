@@ -127,7 +127,6 @@ class AI {
     int first_cell = -1;
     auto memo = HashTableSingleton.Get(&board);
     if (memo != nullptr) {
-      first_cell = memo->move;
       if (memo->depth >= depth) {
         if (memo->lower_bound == memo->upper_bound) {
           out.score = memo->lower_bound;
@@ -137,6 +136,7 @@ class AI {
           return out;
         }
       }
+      first_cell = memo->move;
     }
 
     if (*AnalysisMode) {
@@ -157,7 +157,7 @@ class AI {
 
     for (int i = 0; i < move_count; i++) {
       int cell = moves[i];
-      int alpha = (*AnalysisMode && !pondering) ? -MaxScore : out.score;
+      int alpha = (*AnalysisMode || pondering) ? -MaxScore : out.score;
       int score = this->DeepEvalRec(moves[i], alpha, MaxScore);
       if (*AnalysisMode) {
         cerr << cell << ": " << score << endl;

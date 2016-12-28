@@ -260,7 +260,7 @@ def main(args):
 
   score_board = ScoreBoard()
   with open(hist_path, 'w') as hist:
-    for b1, b2, result, json in pool.imap(OneRound, games, chunksize=1):
+    for b1, b2, result, json in pool.imap_unordered(OneRound, games, chunksize=1):
       score_board.add(b1, b2, result)
       # print summary
       score_board.PrintSummary()
@@ -314,8 +314,8 @@ def OneRound(params):
     bots[0].send_init('1', args.time_per_move)
     bots[1].send_init('2', args.time_per_move)
 
-    # Wait two second for the bots to start
-    time.sleep(2)
+    # Wait for the bots to start
+    time.sleep(0.5)
 
     round_num = 1
     move = 1
@@ -324,6 +324,8 @@ def OneRound(params):
     turn = 0
     result = -1
     game_info.AddRound(field, macroboard, (turn + 1), '')
+    if args.verbose:
+      print_board(field, macroboard)
     while True:
       bot = bots[turn]
       bot_id = turn+1
@@ -332,6 +334,8 @@ def OneRound(params):
       # Update macroboard and game field
       field = update_field(field, move, str(bot_id))
       macroboard = update_macroboard(field, move)
+      if args.verbose:
+        print_board(field, macroboard)
       game_info.AddRound(field, macroboard, (turn + 1) ^ 3, move)
       # Check for winner. If winner, exit.
       if is_winner(macroboard):
@@ -357,6 +361,60 @@ def OneRound(params):
       b.close()
 
   return bot1, bot2, result, game_info.JSon()
+
+ATTRS_CODE = {
+    'white': 30,
+    'red': 31,
+    'yellow': 33,
+    'blue': 34,
+    'cyan': 36,
+    'bg_blue': 44,
+    'bold': 1,
+}
+
+def FormatColor(text, *attrs):
+  if not attrs:
+    return text
+  codes = ';'.join(str(ATTRS_CODE[attr]) for attr in attrs)
+  out = '\033[{codes}m{text}\033[0m'.format(codes=codes,text=text)
+  return out
+
+def print_board(field, macro):
+  field = field.split(',')
+  macro = macro.split(',')
+  
+  rows = []
+  while field:
+    rows.append(field[:9])
+    field = field[9:]
+
+  for i, row in enumerate(rows):
+    row_str = ''
+    if i % 3 == 0:
+      print('+' + ('---+' * 3))
+    for j, cell in enumerate(row):
+      if j % 3 == 0:
+        row_str += '|'
+      mp = (j // 3) + (i // 3) * 3
+      attrs = []
+      if macro[mp] == '-1':
+        attrs.append('bold')
+        attrs.append('bg_blue')
+      if macro[mp] == '1':
+        attrs.append('bold')
+        attrs.append('red')
+      if macro[mp] == '2':
+        attrs.append('bold')
+        attrs.append('blue')
+      if cell == '1':
+        c = 'X'
+      elif cell == '2':
+        c = 'O'
+      else:
+        c = ' '
+      row_str += FormatColor(c, *attrs)
+    print(row_str + '|')
+  print('+' + ('---+' * 3))
 
 
 def update_field(field, move, bot_id):
@@ -475,5 +533,6 @@ if __name__ == '__main__':
   parser.add_argument('--workers', type=int, default=2, help='Number of parallel workers (Default: 1)')
   parser.add_argument('--history', default='history', help='Directory to store game history')
   parser.add_argument('--config', help='Config file with bots to test')
+  parser.add_argument('--verbose', help='Print game progress', action='store_true')
   args = parser.parse_args()
   main(args)
