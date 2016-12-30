@@ -28,6 +28,16 @@ Base(v30):295 Test(candidate):375 Draws:330 Total:1000 Score:54.0±2.5% ScoreNoD
 Base(v26):141 Test(candidate):504 Draws:355 Total:1000 Score:68.2±2.2% ScoreNoDraw:78.1±3.2% Rating:+132
 ```
 
+Pinned both bots to the same cpu:
+
+```
+Base(v24):45 Test(candidate):605 Draws:350 Total:1000 Score:78.0±1.8% ScoreNoDraw:93.1±2.0% Rating:+220
+Base(v25):220 Test(candidate):587 Draws:193 Total:1000 Score:68.3±2.5% ScoreNoDraw:72.7±3.1% Rating:+134
+Base(v26):204 Test(candidate):670 Draws:126 Total:1000 Score:73.3±2.5% ScoreNoDraw:76.7±2.8% Rating:+175
+Base(v30):204 Test(candidate):413 Draws:383 Total:1000 Score:60.5±2.3% ScoreNoDraw:66.9±3.7% Rating:+74
+Base(v31):112 Test(candidate):534 Draws:354 Total:1000 Score:71.1±2.1% ScoreNoDraw:82.7±2.9% Rating:+156
+```
+
 
 - v27 Candidate
 

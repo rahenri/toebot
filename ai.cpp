@@ -124,9 +124,24 @@ class AI {
 
     this->nodes++;
 
+    if (!pondering) {
+      auto slot = TopLevelHashTableSingleton.Get(&board);
+      if (slot != nullptr && slot->depth >= depth) {
+        out.score = slot->score;
+        out.move_count = slot->move_count;
+        for (int i = 0; i < slot->move_count; i++) {
+          out.moves[i] = slot->moves[i];
+        }
+        out.nodes = this->nodes;
+        return out;
+      }
+    }
+
     int first_cell = -1;
     auto memo = HashTableSingleton.Get(&board);
     if (memo != nullptr) {
+      // First level is ok to return a hash hit for higher depth if not pondering.
+      // When pondering, we want to do a full search on all possible responses
       if (!pondering && memo->depth >= depth) {
         if (memo->lower_bound == memo->upper_bound) {
           out.score = memo->lower_bound;
@@ -174,6 +189,7 @@ class AI {
       RewardMove(out.moves[0]);
     }
     HashTableSingleton.Insert(&board, out.score, out.score, depth, out.moves[0]);
+    TopLevelHashTableSingleton.Insert(&board, out.score, depth, out.moves, out.move_count);
 
     out.nodes = nodes;
     sort(out.moves, out.moves+out.move_count);

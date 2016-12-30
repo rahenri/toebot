@@ -15,6 +15,7 @@ import time
 import traceback
 
 from subprocess import Popen, PIPE, STDOUT
+from multiprocessing import Pool
 
 from datetime import datetime
 
@@ -59,7 +60,7 @@ class BotInfo:
     self.display_name = display_name or cmd
 
   def Run(self, round_id, side):
-    with open('logs/bot.stderr.{}.{}.{}'.format(self.identity + 1, round_id + 1, side), 'w') as stderr:
+    with open('logs/bot.stderr.id:{}.round:{}.side:{}'.format(self.identity + 1, round_id + 1, side), 'w') as stderr:
       proc = Popen(self.cmd, shell=True, stdout=PIPE, stdin=PIPE, stderr=stderr, universal_newlines=True, bufsize=1)
       return BotProc(self.identity, self.display_name, proc)
 
@@ -253,15 +254,27 @@ def ParseBots(args):
 
   return games
 
+def PinCPU(counter):
+  with counter.get_lock():
+    cpu_id = counter.value
+    counter.value += 1
+
+  pid = os.getpid()
+  os.system('taskset -pc {} {}'.format(cpu_id, pid))
+  print('Pinned pid {} to cpu {}'.format(pid, cpu_id))
+
 def main(args):
   games = ParseBots(args)
 
-  pool = multiprocessing.Pool(processes=args.workers) 
 
   hist_file = datetime.now().strftime('games-%Y%m%d-%H%M%S.txt')
   hist_path = os.path.join(args.history, hist_file)
 
   score_board = ScoreBoard()
+
+  cpu_counter= multiprocessing.Value('i', lock=True)
+
+  pool = multiprocessing.Pool(processes=args.workers, initializer=PinCPU, initargs=(cpu_counter,)) 
   with open(hist_path, 'w') as hist:
     for b1, b2, result, json in pool.imap_unordered(OneRound, games, chunksize=1):
       score_board.add(b1, b2, result)
