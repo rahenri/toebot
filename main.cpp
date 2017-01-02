@@ -15,6 +15,7 @@
 #include "score_table.h"
 #include "util.h"
 #include "cmd_args.h"
+#include "hash_table.h"
 
 using namespace std;
 using namespace std::chrono;
@@ -96,6 +97,8 @@ struct Game {
       return ret;
     } else if (name == "macroboard") {
       return board.ParseMacroBoard(value);
+    } else if (name == "turn") {
+      turn = stoi(value);
     } else {
       cerr << "Unknown game variable: " << name << endl;
     }
@@ -155,6 +158,38 @@ struct Game {
         cerr << i << endl;
       }
     }
+  }
+
+  bool handleOTEntry() {
+    SearchOptions opt;
+    opt.time_limit = 10000; // 10s
+    SearchResult result = SearchMove(&board, turn, opt);
+    if (result.move_count == 0) {
+      cerr << "No cell available" << endl;
+      return false;
+    }
+    if (result.signal_interruption) {
+      return false;
+    }
+
+    // Prepare opening table item.
+    TableItem item;
+    item.move_count = min(4, result.move_count);
+    for (int i = 0; i < item.move_count; i++) {
+      item.moves[i] = result.moves[i];
+    }
+
+    // Print result
+    auto pair = OpeningTableHash(board, item);
+    cout << hex << "0x" << pair.first;
+    for (int i = 0; i < pair.second.move_count; i++) {
+      cout << " " << dec << int(pair.second.moves[i]);
+    }
+    cout << endl << flush;
+
+    // Insert to opening table in case a rotation comes in
+    InsertOpeningTable(board, item);
+    return true;
   }
 
   SearchResult Ponder() {
@@ -230,6 +265,8 @@ int main(int argc, const char** argv) {
   if (!ParseFlags(argc, argv)) {
     return 1;
   }
+
+  HashTableSingleton.Init(*HashTableSize);
 
   InitSignals();
   InitHashConstants();
@@ -323,6 +360,10 @@ int main(int argc, const char** argv) {
       game->handleListMoves();
     } else if (name == "gen_opening") {
       GenOpeningTable();
+    } else if (name == "gen_ot_entry") {
+      if (!game->handleOTEntry()) {
+        break;
+      }
     } else {
       cerr << "Unknown command: " << name << endl;
       success = false;

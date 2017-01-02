@@ -17,6 +17,9 @@ POSTCOMPILE = mv -f $(DEPDIR)/$*.Td $(DEPDIR)/$*.d
 INPUT_DATA = $(shell find history/ -name '*.txt')
 OUTPUT_DATA = $(patsubst %.txt,%.npz,$(INPUT_DATA))
 
+INPUT_OPENING = $(shell find spider/ -name '*.in')
+OUTPUT_OPENING = $(patsubst %.in,%.out,$(INPUT_OPENING))
+
 data: $(OUTPUT_DATA)
 
 clean-data:
@@ -25,6 +28,15 @@ clean-data:
 %.npz: %.txt learning/compile_data.py
 	@echo "Compiling data $<"
 	@./learning/compile_data.py $< --output $@
+
+opening: $(OUTPUT_OPENING)
+
+clean-opening:
+	rm -f $(OUTPUT_OPENING)
+
+%.out: %.in
+	@echo "Generating $<"
+	@./toebot --enable-opening-table --hash-size 300000017 < $< > $@ 2> $@.stderr
 
 %.o : %.cpp
 %.o : %.cpp $(DEPDIR)/%.d

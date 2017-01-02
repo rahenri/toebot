@@ -3,14 +3,12 @@
 
 #include <cstdint>
 #include <unordered_map>
+#include <cstring>
 
 #include "board.h"
 #include "flags.h"
 
 using namespace std;
-
-static const int HashTableSize = 50000017;
-// static const int HashTableSize = 200000033;
 
 struct BoardMemo {
   uint64_t hash;
@@ -28,9 +26,20 @@ struct TopLevelSlot {
 
 class HashTable {
   public:
+    ~HashTable() {
+      if (this->data) {
+        delete[] this->data;
+      }
+    }
+    void Init(int size) {
+      this->size = size;
+      this->data = new BoardMemo[size];
+      memset(this->data, 0, sizeof(BoardMemo) * size);
+    }
+
     BoardMemo* Get(const Board* board) {
       uint64_t hash = board->Hash();
-      BoardMemo* memo = this->data + (hash % HashTableSize);
+      BoardMemo* memo = this->data + (hash % size);
       if (memo->hash != hash) {
         return nullptr;
       }
@@ -39,7 +48,7 @@ class HashTable {
 
     BoardMemo* Insert(const Board *board, int lower_bound, int upper_bound, int depth, int move) {
       uint64_t hash = board->Hash();
-      BoardMemo* memo = this->data + (hash % HashTableSize);
+      BoardMemo* memo = this->data + (hash % size);
       if (memo->hash != hash || depth > memo->depth) {
         memo->hash = hash;
         memo->depth = depth;
@@ -57,7 +66,8 @@ class HashTable {
     }
 
   private:
-    BoardMemo data[HashTableSize];
+    BoardMemo* data = nullptr;
+    int size = 0;
 };
 
 class TopLevelHashTable {
@@ -96,6 +106,5 @@ class TopLevelHashTable {
 extern HashTable HashTableSingleton;
 
 extern TopLevelHashTable TopLevelHashTableSingleton;
-
 
 #endif

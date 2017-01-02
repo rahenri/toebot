@@ -10,7 +10,7 @@
 #include "random.h"
 #include "search_tree_printer.h"
 #include "flags.h"
-#include "generated_opening_table.h"
+#include "opening_table.h"
 #include "line_reader.h"
 #include "hash_table.h"
 #include "cmd_args.h"
@@ -429,7 +429,7 @@ SearchResult SearchMove(const Board *board, int player, SearchOptions opt) {
 
   // Lookup opening table, return a move from there if we find a hit.
   if (*EnableOpeningTable && opt.use_open_table) {
-    auto item = FindOpeningTable(board->Hash());
+    auto item = FindOpeningTable(*board);
     if (item) {
       out.nodes = 0;
       out.depth = 0;
@@ -444,6 +444,7 @@ SearchResult SearchMove(const Board *board, int player, SearchOptions opt) {
         out.moves[out.move_count++] = m;
       }
       if (out.move_count > 0) {
+        cerr << "Opening table hit" << endl;
         return out;
       }
     }

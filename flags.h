@@ -20,4 +20,6 @@ extern const int* MinTimeLimit;
 
 extern const int* DefaultTimeLimit;
 
+extern const int *HashTableSize;
+
 #endif

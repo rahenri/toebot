@@ -306,6 +306,10 @@ class Board {
     return hash;
   }
 
+  void ExtractField(int8_t* field, int8_t* macroboard) const;
+
+  void PutField(int8_t* field, int8_t* macroboard);
+
 
   inline int Eval(int player) {
     double base = Heuristic();
@@ -355,6 +359,9 @@ class Board {
 
   void RegenState();
 
+  void Rotate();
+  void Mirror();
+
  private:
 
   // All cells values are either 0(empty), one (cross), two (circle).
@@ -363,7 +370,7 @@ class Board {
   // Macrocells, values are either 0(empty), one(cross won), two (circle won)
   // or three(full without winner).
   int8_t macrocells[9];
-  // Next macro cell to play, or -1 if all.
+  // Next macro cell to play, or 9 if all.
   int8_t next_macro = 9;
   // Current board hash.
   uint64_t hash;

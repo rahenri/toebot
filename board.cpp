@@ -49,8 +49,8 @@ bool Board::ParseMacroBoard(const string& repr) {
   if (next_macro == -1) {
     next_macro = 9;
   }
-  // We don't update macroboard here, we can compute the rest from the board
-  // itself.
+  // We don't update macroboard here, only next_macro, we can compute the rest
+  // from the board itself.
   RegenState();
   return true;
 }
@@ -222,4 +222,94 @@ int Board::ply() const {
 
 int Board::turn() const {
   return 2-(ply() % 2);
+}
+
+void Board::ExtractField(int8_t* field, int8_t* macroboard) const {
+  for (int i = 0; i < 81; i++) {
+    int macro = i / 9;
+    int micro = i % 9;
+    int r = (micro / 3) + 3 * (macro / 3);
+    int c = (micro % 3) + 3 * (macro % 3);
+    field[c + r * 9] = cells[i];
+  }
+  for (int i = 0; i < 9; i++) {
+    macroboard[i] = macrocells[i];
+    if (i == next_macro || (macroboard[i] == 0 && next_macro == 9)) {
+      macroboard[i] = -1;
+    }
+  }
+}
+
+void Board::PutField(int8_t* field, int8_t* macroboard) {
+  for (int i = 0; i < 81; i++) {
+    int macro = i / 9;
+    int micro = i % 9;
+    int r = (micro / 3) + 3 * (macro / 3);
+    int c = (micro % 3) + 3 * (macro % 3);
+    cells[i] = field[c + r * 9];
+  }
+  int next = 9;
+  int next_count = 0;
+  for (int i = 0; i < 9; i++) {
+    macrocells[i] = macroboard[i];
+    if (macrocells[i] == -1) {
+      next = i;
+      next_count++;
+      macrocells[i] = 0;
+    }
+  }
+  if (next_count > 1) {
+    next = 9;
+  }
+  next_macro = next;
+  RegenState();
+}
+
+void rotate(int8_t* cells, int side) {
+  int size = side * side;
+  int8_t tmp[size];
+  for(int i = 0; i < size; i++) {
+    tmp[i] = cells[i];
+  }
+  for (int i = 0; i < size; i++) {
+    int r = i / side;
+    int c = i % side;
+    int nr = c;
+    int nc = side - 1 - r;
+    int ni = nr * side + nc;
+    cells[ni] = tmp[i];
+  }
+}
+
+void mirror(int8_t* cells, int side) {
+  int size = side * side;
+  int8_t tmp[size];
+  for(int i = 0; i < size; i++) {
+    tmp[i] = cells[i];
+  }
+  for (int i = 0; i < size; i++) {
+    int r = i / side;
+    int c = i % side;
+    int nc = side - c - 1;
+    int ni = r * side + nc;
+    cells[ni] = tmp[i];
+  }
+}
+
+void Board::Rotate() {
+  int8_t field[81];
+  int8_t macroboard[9];
+  this->ExtractField(field, macroboard);
+  rotate(field, 9);
+  rotate(macroboard, 3);
+  PutField(field, macroboard);
+}
+
+void Board::Mirror() {
+  int8_t field[81];
+  int8_t macroboard[9];
+  this->ExtractField(field, macroboard);
+  mirror(field, 9);
+  mirror(macroboard, 3);
+  PutField(field, macroboard);
 }
