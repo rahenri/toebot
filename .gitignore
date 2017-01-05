@@ -9,3 +9,6 @@ history*
 logs
 out*
 toebot-*
+*.in
+*.out
+*stderr

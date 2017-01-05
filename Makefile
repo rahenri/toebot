@@ -35,7 +35,7 @@ clean-opening:
 	rm -f $(OUTPUT_OPENING)
 
 %.out: %.in
-	@echo "Generating $<"
+	@echo "Generating $@"
 	@./toebot --enable-opening-table --hash-size 300000017 < $< > $@ 2> $@.stderr
 
 %.o : %.cpp

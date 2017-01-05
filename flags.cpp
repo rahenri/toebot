@@ -13,7 +13,7 @@ const int* MaxDepth = NewIntFlag("max-depth", 100);
 const bool* AnalysisMode = NewBoolFlag("analysis", false);
 
 // Disable opening table for now.
-const bool* EnableOpeningTable = NewBoolFlag("enable-opening-table", false);
+const bool* EnableOpeningTable = NewBoolFlag("enable-opening-table", true);
 
 const int* MinTimeLimit = NewIntFlag("min-time-limit", 0);
 const int* DefaultTimeLimit = NewIntFlag("default-time-limit", 800);
