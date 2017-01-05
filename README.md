@@ -4,6 +4,16 @@ Toebot is an AI for palying ultimate tic tac toe game in the theaigames.com comp
 
 # Progress
 
+- v34
+
+Enable opening table by default.
+
+Base(v33):265 Test(candidate):634 Draws:101 Total:1000 Score:68.5±2.7% ScoreNoDraw:70.5±3.0% Rating:+135
+
+- v33
+
+Fix pondering
+
 - v31
 
 Experimenting with pondering and sorting:
