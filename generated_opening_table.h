@@ -13,4 +13,6 @@ struct TableItem {
 
 extern std::unordered_map<uint64_t, TableItem> generatedOpeningTable;
 
+void InitOpeningTable();
+
 #endif

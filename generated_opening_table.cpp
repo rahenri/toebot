@@ -4,7 +4,14 @@
 
 using namespace std;
 
-unordered_map<uint64_t, TableItem> generatedOpeningTable = {
+struct map_pair {
+  uint64_t key;
+  TableItem item;
+};
+
+unordered_map<uint64_t, TableItem> generatedOpeningTable;
+
+map_pair temp_table[] = {
   {0x100018659a99a504, {1, {50}}},
   {0x1000a7415118dc53, {1, {56}}},
   {0x1000bd85f9b579e0, {1, {76}}},
@@ -28895,3 +28902,9 @@ unordered_map<uint64_t, TableItem> generatedOpeningTable = {
   {0xfffc006ecc171ec, {1, {70}}},
   {0xffff3d05c6555db, {1, {56}}},
 };
+
+void InitOpeningTable() {
+  for (const auto& pair: temp_table) {
+    generatedOpeningTable.insert(make_pair(pair.key, pair.item));
+  }
+}

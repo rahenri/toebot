@@ -383,7 +383,6 @@ class AI {
   }
 
   int64_t nodes = 0;
-  int time_limit = 0;
   int deadline_counter = 0;
   int initial_player = 0;
   steady_clock::time_point deadline;

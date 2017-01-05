@@ -13,9 +13,9 @@ using namespace std;
 struct BoardMemo {
   uint64_t hash;
   int32_t lower_bound, upper_bound;
-  int depth;
-  int move;
-};
+  int8_t depth;
+  int8_t move;
+} __attribute__((packed));
 
 struct TopLevelSlot {
   int32_t score = 0;

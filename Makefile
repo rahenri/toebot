@@ -11,7 +11,7 @@ DEPDIR := .d
 $(shell mkdir -p $(DEPDIR) >/dev/null)
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.Td
 
-COMPILE.cpp = g++ $(DEPFLAGS) $(CXXFLAGS) -c
+COMPILE.cpp = $(CXX) $(DEPFLAGS) $(CXXFLAGS) -c
 POSTCOMPILE = mv -f $(DEPDIR)/$*.Td $(DEPDIR)/$*.d
 
 INPUT_DATA = $(shell find history/ -name '*.txt')
@@ -57,11 +57,11 @@ line_reader.o: line_reader.h line_reader.cpp
 
 toebot: $(OBJECTS) $(MAIN_OBJECT)
 	@echo "Linking $@..."
-	@g++ $^ $(LDLIBS) $(CXXFLAGS) -o $@
+	@$(CXX) $^ $(LDLIBS) $(CXXFLAGS) -o $@
 
 board_test: board_test.o $(OBJECTS)
 	@echo "Linking $@..."
-	@g++ $^ $(LDLIBS) $(CXXFLAGS) -o $@
+	@$(CXX) $^ $(LDLIBS) $(CXXFLAGS) -o $@
 	@echo "Running $@..."
 	@./board_test
 	@rm board_test

@@ -200,7 +200,7 @@ struct Game {
     cerr << "Start pondering" << endl;
     SearchOptions opt;
     opt.interruptable = true;
-    opt.time_limit = 6000000; // 100 min
+    opt.time_limit = 0; // no limit
     opt.pondering = true;
     auto out = SearchMove(&board, this->turn, opt);
     cerr << "End pondering" << endl;
@@ -272,6 +272,7 @@ int main(int argc, const char** argv) {
   InitHashConstants();
   InitScoreTable();
   InitBoardConstants();
+  InitOpeningTable();
 
   string line;
   unique_ptr<Game> game(new Game);
