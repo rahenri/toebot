@@ -42,16 +42,16 @@ bool TestDecodeEncodeCell() {
 bool TestUnTick() {
   Board clean;
   Board board;
-  int info = board.tick(0, 1);
+  int info = board.tick(0);
   board.untick(0, info);
   if (clean != board) {
     cerr << "Boards differ";
     return false;
   }
 
-  board.tick(0, 1);
-  clean.tick(0, 1);
-  info = board.tick(1, 2);
+  board.tick(0);
+  clean.tick(0);
+  info = board.tick(1);
   board.untick(1, info);
   if (clean != board) {
     cerr << "Boards differ";

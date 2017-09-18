@@ -65,13 +65,12 @@ class AI {
 
    // Initialize the AI to search a specific board with the the given params
    // - board: the initial state of the board
-   // - player: the player to play next
    // - ply: how many moves have been playes so far in the game.
    // - time_limit: specifies the maximum amount of time to spend on the search in milliseconds, no time limit if zero.
    // - interruptable: whether the search can be interrupted if the is any data available in the input, used for pondering.
-  AI(const Board* board, int player, int ply, int time_limit, bool interruptable, int ponder)
+  AI(const Board* board, int ply, int time_limit, bool interruptable, int ponder)
     : interruptable(interruptable),
-      board(*board), player(player),
+      board(*board),
       ply(ply),
       depth_shortening(*DepthShortening),
       shortening_threshold(*ShorteningThreshold),
@@ -110,13 +109,12 @@ class AI {
   SearchResult SearchMove() {
     if (PrintSearchTree) {
       printer->Push(&board);
-      printer->Attr("player", player);
+      printer->Attr("player", board.Turn());
       printer->Attr("ply", ply);
       printer->Attr("depth", depth);
       printer->Attr("board", board.BoardRepr());
       printer->Attr("macro", board.MacroBoardRepr());
     }
-    this->initial_player = player;
     SearchResult out;
     out.score = -MaxScore;
     out.depth = depth;
@@ -233,7 +231,7 @@ class AI {
     this->nodes++;
     this->checkInterruption();
 
-    auto tick_info = board.tick(cell, player);
+    auto tick_info = board.tick(cell);
     int score;
 
     if (board.isOver()) {
@@ -241,12 +239,11 @@ class AI {
     } else if (board.IsDrawn()) {
       score = -DrawPenalty;
     } else {
-      player ^= 3;
       depth--;
       ply++;
       if (PrintSearchTree) {
         printer->Push(&board);
-        printer->Attr("player", player);
+        printer->Attr("player", board.Turn());
         printer->Attr("ply", ply);
         printer->Attr("depth", depth);
         printer->Attr("alpha", alpha);
@@ -280,7 +277,6 @@ class AI {
         printer->Attr("score", score);
         printer->Pop();
       }
-      player ^= 3;
       depth++;
       ply--;
     }
@@ -334,11 +330,11 @@ class AI {
       if (PrintSearchTree) {
         printer->Attr("leaf", true);
       }
-      best_score = board.Eval(player);
+      best_score = board.Eval();
       if (best_score > beta) {
         return best_score;
       }
-      move_count = board.ListCaptureMoves(moves, player);
+      move_count = board.ListCaptureMoves(moves);
     } else {
       move_count = board.ListMoves(moves, first_cell);
     }
@@ -384,12 +380,10 @@ class AI {
 
   int64_t nodes = 0;
   int deadline_counter = 0;
-  int initial_player = 0;
   steady_clock::time_point deadline;
   bool has_deadline;
   const bool interruptable;
   Board board;
-  int player;
   int ply = 0;
   int depth = 0;
   bool shortened = false;
@@ -421,7 +415,7 @@ int SearchResult::RandomMove() const {
 
 // Compute the best move for the given board and player.
 // This is the entry point for the AI search.
-SearchResult SearchMove(const Board *board, int player, SearchOptions opt) {
+SearchResult SearchMove(const Board *board, SearchOptions opt) {
   int ply = board->ply();
 
   SearchResult out;
@@ -449,7 +443,7 @@ SearchResult SearchMove(const Board *board, int player, SearchOptions opt) {
     }
   }
 
-  AI ai(board, player, ply, opt.time_limit, opt.interruptable, opt.pondering);
+  AI ai(board, ply, opt.time_limit, opt.interruptable, opt.pondering);
   out.move_count = 0;
   auto start = steady_clock::now();
 

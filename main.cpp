@@ -1,9 +1,11 @@
 #include <chrono>
 #include <cstring>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <sstream>
 #include <vector>
+#include <signal.h>
 
 #include "ai.h"
 #include "board.h"
@@ -26,12 +28,12 @@ struct Settings {
   int time_per_move = 500;
   vector<string> player_names;
   string my_name;
-  int my_id = 1;
+  int my_id = 0;
 
-  void update(const vector<string>& args) {
+  bool update(const vector<string>& args) {
     if (args.size() != 2) {
       cerr << "Wrong number of arguments to settings" << endl;
-      return;
+      return false;
     }
     string setting = args[0];
     string value = args[1];
@@ -44,10 +46,16 @@ struct Settings {
     } else if(setting == "your_bot") {
       my_name = value;
     } else if(setting == "your_botid") {
-      my_id = stoi(value);
+      my_id = stoi(value) + 1;
+      if (my_id != 1 && my_id != 2) {
+        cerr << "invalid bot id: " << value << endl;
+        return false;
+      }
     } else {
       cerr << "Unknown setting: " << setting << endl;
+      return false;
     }
+    return true;
   }
 };
 
@@ -58,8 +66,6 @@ struct Game {
   Settings settings;
 
   Board board;
-
-  int turn = 1;
 
   bool update(const vector<string>& args) {
     if (args.size() != 3) {
@@ -73,6 +79,7 @@ struct Game {
     } else if (name == "move") {
       move = stoi(value);
     } else if (name == "field") {
+      cerr << "updating game field" << endl;
       Board copy = board;
       bool ret = board.ParseBoard(value);
       int diffs = 0;
@@ -89,24 +96,25 @@ struct Game {
       }
       if (diffs == 1 && diff >= 0) {
         cerr << "Opponent played cell " << diff << endl;
-        this->turn = player ^ 3;
+        board.SetTurn(player ^ 3);
       } else {
         cerr << "Don't know what the opponent played, diffs: " << diffs << endl;
-        this->turn = 2 - (board.ply() % 2);
+        board.SetTurn(2 - (board.ply() % 2));
       }
       return ret;
     } else if (name == "macroboard") {
       return board.ParseMacroBoard(value);
     } else if (name == "turn") {
-      turn = stoi(value);
+      board.SetTurn(stoi(value));
     } else {
       cerr << "Unknown game variable: " << name << endl;
+      return false;
     }
     return true;
   }
 
   bool handleAction(const vector<string>& args) {
-    turn = settings.my_id;
+    board.SetTurn(settings.my_id);
     int time_limit = *DefaultTimeLimit;
     if (args.size() >= 2) {
       time_limit = min(stoi(args[1]) - 50, *DefaultTimeLimit);
@@ -114,13 +122,13 @@ struct Game {
     time_limit = max(time_limit, *MinTimeLimit);
     SearchOptions opt;
     opt.time_limit = time_limit;
-    SearchResult result = SearchMove(&board, settings.my_id, opt);
+    SearchResult result = SearchMove(&board, opt);
     if (result.move_count == 0) {
       cerr << "No cell available" << endl;
       return false;
     }
     int move = result.RandomMove();
-    board.tick(move, settings.my_id);
+    board.tick(move);
     cerr << "Move Score: " << result.score << ", Nodes: " << result.nodes << " Depth: " << result.depth << " Move: " << move << endl;
     cerr << board;
     cerr << board.BoardRepr() << endl;
@@ -128,8 +136,7 @@ struct Game {
     int row, col;
     decodeCell(move, row, col);
     cout << "place_move " << col << " " << row << endl << flush;
-    this->turn ^= 3;
-    cerr << "Turn is " << this->turn << endl;
+    cerr << "Turn is " << board.Turn() << endl;
     return true;
   }
 
@@ -138,8 +145,7 @@ struct Game {
     if (!board.canTick(cell)) {
       return false;
     }
-    board.tick(cell, this->turn);
-    this->turn ^= 3;
+    board.tick(cell);
     return true;
   }
 
@@ -147,8 +153,7 @@ struct Game {
     if (!board.canTick(cell)) {
       return false;
     }
-    board.tick(cell, this->turn);
-    this->turn ^= 3;
+    board.tick(cell);
     return true;
   }
 
@@ -163,7 +168,7 @@ struct Game {
   bool handleOTEntry() {
     SearchOptions opt;
     opt.time_limit = 10000; // 10s
-    SearchResult result = SearchMove(&board, turn, opt);
+    SearchResult result = SearchMove(&board, opt);
     if (result.move_count == 0) {
       cerr << "No cell available" << endl;
       return false;
@@ -202,7 +207,7 @@ struct Game {
     opt.interruptable = true;
     opt.time_limit = 0; // no limit
     opt.pondering = true;
-    auto out = SearchMove(&board, this->turn, opt);
+    auto out = SearchMove(&board, opt);
     cerr << "End pondering" << endl;
     return out;
   }
@@ -213,13 +218,12 @@ bool RunTests();
 bool handleSelfPlay() {
   RandSeed(0);
   Board board;
-  int player = 1;
   int rounds = 0;
   int64_t total_nodes = 0;
   while(1) {
     auto t1 = steady_clock::now();
     if (board.isOver()) {
-      cerr << "Player " << (player^3) << " won" << endl;
+      cerr << "Player " << (board.Turn()^3) << " won" << endl;
       break;
     }
     if (board.IsDrawn()) {
@@ -228,7 +232,7 @@ bool handleSelfPlay() {
     }
     SearchOptions opt;
     opt.time_limit = max(*MinTimeLimit, *DefaultTimeLimit);
-    SearchResult result = SearchMove(&board, player, opt);
+    SearchResult result = SearchMove(&board, opt);
     if (result.signal_interruption) {
       return false;
     }
@@ -241,7 +245,7 @@ bool handleSelfPlay() {
       cerr << "Bot produced invalid move: " << move << endl;
       break;
     }
-    board.tick(move, player);
+    board.tick(move);
     int row, col;
     decodeCell(move, row, col);
     auto time_span = duration_cast<duration<double>>(steady_clock::now() - t1);
@@ -251,7 +255,6 @@ bool handleSelfPlay() {
     cerr << board.BoardRepr() << endl;
     cerr << board.MacroBoardRepr() << endl;
     cerr << endl;
-    player ^= 3;
     rounds++;
     total_nodes += result.nodes;
   }
@@ -259,7 +262,25 @@ bool handleSelfPlay() {
   return true;
 }
 
+void segfault_sigaction(int signal, siginfo_t *si, void *arg) {
+  cerr << "Caught segfault at address " << si->si_addr << endl;
+  exit(SIGSEGV);
+}
+
+void setup_sigaction() {
+  struct sigaction sa;
+
+  memset(&sa, 0, sizeof(struct sigaction));
+  sigemptyset(&sa.sa_mask);
+  sa.sa_sigaction = segfault_sigaction;
+  sa.sa_flags   = SA_SIGINFO;
+
+  sigaction(SIGSEGV, &sa, NULL);
+}
+
 int main(int argc, const char** argv) {
+  setup_sigaction();
+
   RandSeed(duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count());
 
   if (!ParseFlags(argc, argv)) {
@@ -327,7 +348,7 @@ int main(int argc, const char** argv) {
       success = game->handleAction(args);
       ready_to_ponder = true;
     } else if (name == "settings") {
-      game->settings.update(args);
+      success = game->settings.update(args);
     } else if (name == "update") {
       success = game->update(args);
     } else if (name == "test") {
@@ -371,6 +392,7 @@ int main(int argc, const char** argv) {
     }
     if (!success) {
       cerr << "Command failed: " << line << endl;
+      return 1;
     }
     steady_clock::time_point t2 = steady_clock::now();
     duration<double> time_span = duration_cast<duration<double>>(t2 - t1);

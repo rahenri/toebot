@@ -1,9 +1,9 @@
 #/bin/sh
 
-output=toebot.tar.gz
+OUTPUT=toebot.zip
 
-rm -rf ${output}
+rm -rf ${OUTPUT}
 
 FILES=$(find .  | grep '\.\(h\|cpp\)$' | grep -v '_test\.cpp$')
 
-tar -czf ${output} ${FILES}
+zip ${OUTPUT} ${FILES}

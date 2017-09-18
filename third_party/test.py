@@ -260,8 +260,11 @@ def PinCPU(counter):
     counter.value += 1
 
   pid = os.getpid()
-  os.system('taskset -pc {} {}'.format(cpu_id, pid))
-  print('Pinned pid {} to cpu {}'.format(pid, cpu_id))
+  try:
+      os.system('taskset -pc {} {}'.format(cpu_id, pid))
+      print('Pinned pid {} to cpu {}'.format(pid, cpu_id))
+  except:
+      print('Faile to pin to cpu')
 
 def main(args):
   games = ParseBots(args)
@@ -327,15 +330,15 @@ def OneRound(params):
     bots = [bot1.Run(round_id, 1), bot2.Run(round_id, 2)]
 
     # Simulate game init input
-    bots[0].send_init('1', args.time_per_move)
-    bots[1].send_init('2', args.time_per_move)
+    bots[0].send_init('0', args.time_per_move)
+    bots[1].send_init('1', args.time_per_move)
 
     # Wait for the bots to start
     time.sleep(0.5)
 
     round_num = 1
     move = 1
-    field = ','.join(['0'] * 81)
+    field = ','.join(['.'] * 81)
     macroboard = ','.join(['-1'] * 9)
     turn = 0
     result = -1
@@ -344,7 +347,7 @@ def OneRound(params):
       print_board(field, macroboard)
     while True:
       bot = bots[turn]
-      bot_id = turn+1
+      bot_id = turn
       # Send inputs to bot
       move = bot.send_update(round_num, field, macroboard, args.time_per_move)
       # Update macroboard and game field
@@ -439,7 +442,7 @@ def update_field(field, move, bot_id):
   index = int(row) * 9 + int(col)
   if index < 0 or index >= 81:
     raise RuntimeError('Invalid move {}.'.format(move))
-  if arr[index] != '0':
+  if arr[index] != '.':
     raise RuntimeError(
       'Square {col} {row} already occupied by {occ}.'.format(
         col=col, row=row, occ=arr[index]))
@@ -472,16 +475,13 @@ def update_macroboard(field, move):
       [0, 4, 8],
       [6, 4, 2]]
 
-    winners = ('111', '222')
+    winners = ('000', '111')
     for opt in winopts:
       val = a[opt[0]] + a[opt[1]] + a[opt[2]]
       if val in winners:
         return a[opt[0]]
 
-    if '0' not in a:
-      return '3'
-
-    return '0'
+    return '.'
 
   macroboard = [get_state(b) for b in small_boards]
 
@@ -502,11 +502,11 @@ def update_macroboard(field, move):
   for i, b in enumerate(boards):
     if index in b:
       # If macro space available, update it to -1
-      if macroboard[i] == '0':
+      if macroboard[i] == '.':
         macroboard[i] = '-1'
         break
-      else:  # If macro space not available, update all 0 to -1
-        macroboard = ['-1' if m == '0' else m for m in macroboard]
+      else:  # If macro space not available, update all . to -1
+        macroboard = ['-1' if m == '.' else m for m in macroboard]
         break
 
   return ','.join(macroboard)
@@ -534,7 +534,7 @@ def is_winner(macroboard):
 
 def is_draw(macroboard):
   parts = macroboard.split(',')
-  if '0' in parts:
+  if '.' in parts:
     return False
   if '-1' in parts:
     return False
@@ -551,4 +551,6 @@ if __name__ == '__main__':
   parser.add_argument('--config', help='Config file with bots to test')
   parser.add_argument('--verbose', help='Print game progress', action='store_true')
   args = parser.parse_args()
+  if args.verbose:
+      print('Verbose mode enabled')
   main(args)

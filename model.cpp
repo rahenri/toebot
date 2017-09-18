@@ -22,8 +22,6 @@ double cell_score[81] = {
   -0.05252663,
 };
 
-double reg_turn_coef =  0.00000000;
-
 double reg_delta_coef =  0.00000000;
 
 double reg_cell_bias = -0.00037803;

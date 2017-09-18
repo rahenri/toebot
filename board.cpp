@@ -18,7 +18,18 @@ bool Board::ParseBoard(const string& repr) {
   for (int i = 0; i < 9; i++) {
     for (int j = 0; j < 9; j++) {
       int k = i*9+j;
-      this->cells[encodeCell(i, j)] = stoi(parts[k]);
+      int8_t c = 0;
+      if (parts[k] == ".") {
+        c = 0;
+      } else if(parts[k] == "0") {
+        c = 1;
+      } else if(parts[k] == "1") {
+        c = 2;
+      } else {
+        cerr << "Bad board cell:" << parts[k] << endl;
+        return false;
+      }
+      this->cells[encodeCell(i, j)] = c;
     }
   }
   RegenState();
@@ -26,6 +37,8 @@ bool Board::ParseBoard(const string& repr) {
 }
 
 bool Board::ParseMacroBoard(const string& repr) {
+  // The only thing we need to parse from this is the "next macroboard"
+  // information.
   auto parts = parseCSV(repr);
   if (parts.size() != 9) {
     cerr << "Bad macro board size: " << parts.size() << endl;
@@ -35,19 +48,27 @@ bool Board::ParseMacroBoard(const string& repr) {
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {
       int k = i*3+j;
-      int v = stoi(parts[k]);
-      if (v == -1) {
-        v = 0;
+      if (parts[k] == "-1") {
         if (next_macro == -1) {
           next_macro = k;
         } else {
           next_macro = 9;
         }
+      } else if(parts[k] == ".") {
+        // nothing to do here
+      } else if(parts[k] == "0") {
+        // nothing to do here
+      } else if(parts[k] == "1") {
+        // nothing to do here
+      } else {
+        cerr << "Bad macroboard cell:" << parts[k] << endl;
+        return false;
       }
     }
   }
   if (next_macro == -1) {
-    next_macro = 9;
+    cerr << "Next macro not specified" << endl;
+    return false;
   }
   // We don't update macroboard here, only next_macro, we can compute the rest
   // from the board itself.
@@ -144,13 +165,7 @@ void Board::RegenState() {
     }
   }
 
-
   reg_score_inc = reg_cell_bias_int;
-  if (turn() == 1) {
-    reg_score_inc += reg_turn_coef_int;
-  } else {
-    reg_score_inc -= reg_turn_coef_int;
-  }
   for (int i = 0; i < 9*9; i++) {
     if (cells[i] == 1) {
       reg_score_inc -= reg_cell_score_int[i];
@@ -158,6 +173,7 @@ void Board::RegenState() {
       reg_score_inc += reg_cell_score_int[i];
     }
   }
+
 
   hash = HashBoard(this);
   this->done = (isDone(this->macrocells, 1) || isDone(macrocells, 2));
@@ -218,10 +234,6 @@ int Board::ply() const {
     }
   }
   return ply;
-}
-
-int Board::turn() const {
-  return 2-(ply() % 2);
 }
 
 void Board::ExtractField(int8_t* field, int8_t* macroboard) const {

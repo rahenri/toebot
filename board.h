@@ -20,14 +20,26 @@ extern int8_t captureMoveLookup[33270];
 static const int MaxScore = 2000000000;
 
 static const int8_t WinLines[][3] = {
-  {0, 1, 2},
-  {3, 4, 5},
-  {6, 7, 8},
-  {0, 3, 6},
-  {1, 4, 7},
-  {2, 5, 8},
-  {0, 4, 8},
-  {2, 4, 6},
+  {0, 1, 2}, // 0
+  {3, 4, 5}, // 1
+  {6, 7, 8}, // 2
+  {0, 3, 6}, // 3
+  {1, 4, 7}, // 4
+  {2, 5, 8}, // 5
+  {0, 4, 8}, // 6
+  {2, 4, 6}, // 7
+};
+
+static const int8_t LinesByPos[][5] = {
+  {0, 3, 6, -1}, // 0
+  {0, 4, -1},    // 1
+  {0, 5, 7, -1}, // 2
+  {1, 3, -1},    // 3
+  {1, 4, 6, 7, -1}, // 4
+  {1, 5, -1},    // 5
+  {2, 3, 7, -1}, // 6
+  {2, 4, -1},    // 7
+  {2, 5, 6, -1}, // 8
 };
 
 inline bool isDone(const int8_t* cells, int8_t player) {
@@ -144,28 +156,28 @@ class Board {
     return draw;
   }
 
-  int tick(int cell, int player) {
+  int tick(int cell) {
     int mcell = cell/9;
     int bcell = cell%9;
 
-    cells[cell] = player;
-    boards_code[mcell] ^= player << (bcell * 2);
-    if (player == 1) {
+    cells[cell] = turn;
+    assert(bcell < 9);
+    boards_code[mcell] ^= turn << (bcell * 2);
+    assert(boards_code[mcell] < (1<<18));
+    if (turn == 1) {
       reg_score_inc -= reg_cell_score_int[cell];
-      reg_score_inc -= reg_turn_coef_int * 2;
     } else {
       reg_score_inc += reg_cell_score_int[cell];
-      reg_score_inc += reg_turn_coef_int * 2;
     }
 
     int ret = next_macro;
 
     // Check if current macrocell is now taken.
     const int8_t* b = cells + (mcell*9);
-    if (isDoneWithCell(b, bcell, player)) {
-      macrocells[mcell] = player;
-      macroboard_code |= player << (mcell * 2);
-      if (isDoneWithCell(macrocells, mcell, player)) {
+    if (isDoneWithCell(b, bcell, turn)) {
+      macrocells[mcell] = turn;
+      macroboard_code |= turn << (mcell * 2);
+      if (isDoneWithCell(macrocells, mcell, turn)) {
         done = true;
       }
     }  else if(isFull(b)) {
@@ -196,36 +208,39 @@ class Board {
       }
     }
 
-    hash = UpdateHash(hash, next_macro, ret, cell, player);
+    hash = UpdateHash(hash, next_macro, ret, cell, turn);
+
+    turn ^= 3;
 
     return ret;
   }
 
   void untick(int cell, int tick_info) {
+    turn ^= 3;
+
     int mcell = cell/9;
     int bcell = cell%9;
-    int player = cells[cell];
     cells[cell] = 0;
-    boards_code[mcell] ^= player << (bcell * 2);
+    assert(bcell < 9);
+    boards_code[mcell] ^= turn << (bcell * 2);
+    assert(boards_code[mcell] < (1<<18));
     macroboard_code ^= macrocells[mcell] << (mcell * 2);
     macrocells[mcell] = 0;
-    hash = UpdateHash(hash, next_macro, tick_info, cell, player);
+    hash = UpdateHash(hash, next_macro, tick_info, cell, turn);
     next_macro = tick_info;
     done = false;
     draw = false;
-    if (player == 1) {
+    if (turn == 1) {
       reg_score_inc += reg_cell_score_int[cell];
-      reg_score_inc += reg_turn_coef_int * 2;
     } else {
       reg_score_inc -= reg_cell_score_int[cell];
-      reg_score_inc -= reg_turn_coef_int * 2;
     }
   }
 
-  inline int ListCaptureMoves(uint8_t* moves, int player) {
+  inline int ListCaptureMoves(uint8_t* moves) {
     int move_count = 0;
     if (next_macro != 9) {
-      auto offset = captureMoveIndex[boards_code[next_macro]][player-1];
+      auto offset = captureMoveIndex[boards_code[next_macro]][turn-1];
       if (offset != 0xffff) {
         int k = next_macro * 9;
         while (captureMoveLookup[offset]>=0) {
@@ -237,7 +252,7 @@ class Board {
         if (macrocells[mcell] != 0) {
           continue;
         }
-        auto offset = captureMoveIndex[boards_code[mcell]][player-1];
+        auto offset = captureMoveIndex[boards_code[mcell]][turn-1];
         if (offset != 0xffff) {
           int k = mcell * 9;
           while (captureMoveLookup[offset]>=0) {
@@ -311,51 +326,79 @@ class Board {
   void PutField(int8_t* field, int8_t* macroboard);
 
 
-  inline int Eval(int player) {
-    double base = Heuristic();
-    // double delta = Heuristic2(player);
-    int score = int((base /*+ (delta - base) * reg_delta_coef*/) * score_factor) + (reg_score_inc);
-    return (player == 1) ? score : -score;
+  inline int Eval() {
+    int base = int(Heuristic() * score_factor);
+    int base2 = int(Heuristic2() * 0.3 * score_factor);
+    int score = base + base2 + (reg_score_inc);
+    return ((turn == 1) ? score : -score);
   }
 
-  int ply() const;
-  int turn() const;
-
   inline double Heuristic() {
-    double sum = 0.0;
-    for (const auto& line : WinLines) {
+    double sum = 0;
+    for (int i = 0; i < 8; i++) {
+      const auto* line = WinLines[i];
       sum += (micro_win_prob[boards_code[line[0]]] * micro_win_prob[boards_code[line[1]]] * micro_win_prob[boards_code[line[2]]])
         - (micro_lose_prob[boards_code[line[0]]] * micro_lose_prob[boards_code[line[1]]] * micro_lose_prob[boards_code[line[2]]]);
+
     }
     return sum;
   }
 
-  inline double Heuristic2(int player) {
-    double best = (player == 1) ? -1e9 : 1e9;;
-    if (next_macro == -1) {
+  inline double Heuristic2() {
+    if (next_macro == 9) {
+      return 0.2;
+      double best = (turn == 1) ? -1e9 : 1e9;;
       for (int i = 0; i < 9; i++) {
         if (macrocells[i] != 0) {
           continue;
         }
-        double value = Heuristic2p1(i, player << (best_cell_table[player-1][boards_code[i]]));
-        if (player == 1) {
+        double value = Heuristic2p2(i, turn << (2 * (best_cell_table[turn-1][boards_code[i]])));
+        if (turn == 1) {
           best = max(best, value);
         } else {
           best = min(best, value);
         }
       }
+      return best;
     } else {
-      int i = next_macro;
-      best = Heuristic2p1(i, player << (best_cell_table[player-1][boards_code[i]]));
+      return Heuristic2p2(next_macro, turn << (2 * (best_cell_table[turn-1][boards_code[next_macro]])));
     }
-    return best;
   }
-  inline double Heuristic2p1(int macro, int mask) {
+
+  inline double Heuristic2p2(int macro, int mask) {
+    double before = Heuristic2p1(macro);
+    assert(mask < (1<<18));
     boards_code[macro] ^= mask;
-    double sum = Heuristic();
+    double after = Heuristic2p1(macro);
     boards_code[macro] ^= mask;
+    return after - before;
+  }
+
+  inline double Heuristic2p1(int macro) {
+    double sum = 0;
+    for (int i = 0; i < 9; i++) {
+      assert(boards_code[i] < (1<<18));
+    }
+    for (int i = 0; LinesByPos[macro][i] != -1; i++) {
+      const auto* line = WinLines[LinesByPos[macro][i]];
+      sum += (micro_win_prob[boards_code[line[0]]] * micro_win_prob[boards_code[line[1]]] * micro_win_prob[boards_code[line[2]]])
+        - (micro_lose_prob[boards_code[line[0]]] * micro_lose_prob[boards_code[line[1]]] * micro_lose_prob[boards_code[line[2]]]);
+
+    }
     return sum;
   }
+
+  int ply() const;
+  inline int Turn() const {
+    return turn;
+  }
+  inline void SetTurn(int player) {
+    if (player != turn) {
+      this->turn = player;
+      RegenState();
+    }
+  }
+
 
   void RegenState();
 
@@ -363,6 +406,8 @@ class Board {
   void Mirror();
 
  private:
+
+  int8_t turn = 1;
 
   // All cells values are either 0(empty), one (cross), two (circle).
   // Each microboard is consecutive
@@ -382,7 +427,7 @@ class Board {
   bool done = false;
   bool draw = false;
 
-  int reg_score_inc = reg_cell_bias_int + reg_turn_coef_int;
+  int reg_score_inc = reg_cell_bias_int;
 };
 
 ostream& operator<<(ostream& stream, const Board& board);

@@ -1,6 +1,6 @@
 all: toebot
 
-CXXFLAGS=-Wall -O3 --std=c++1y -Werror -ggdb3 -D_LOCAL
+CXXFLAGS=-Wall -O0 --std=c++1y -Werror -D_LOCAL -ggdb3
 
 OBJECTS = test.o board.o util.o ai.o random.o hash.o search_tree_printer.o hash_table.o score_table.o opening_table.o interruption.o line_reader.o generated_opening_table.o cmd_args.o flags.o model.o
 MAIN_OBJECT = main.o
@@ -14,7 +14,7 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.Td
 COMPILE.cpp = $(CXX) $(DEPFLAGS) $(CXXFLAGS) -c
 POSTCOMPILE = mv -f $(DEPDIR)/$*.Td $(DEPDIR)/$*.d
 
-INPUT_DATA = $(shell find history/ -name '*.txt')
+INPUT_DATA = $(shell find history/ -name '*.txt' 2> /dev/null)
 OUTPUT_DATA = $(patsubst %.txt,%.npz,$(INPUT_DATA))
 
 INPUT_OPENING = $(shell find spider/ -name '*.in')

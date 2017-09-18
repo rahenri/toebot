@@ -27,7 +27,7 @@ struct OpeningGenerator {
   }
 
 
-  void RecursiveGenTable(Board* board, int player, int depth) {
+  void RecursiveGenTable(Board* board, int depth) {
     if (depth == 0) {
       return;
     }
@@ -35,7 +35,7 @@ struct OpeningGenerator {
     SearchOptions opt;
     opt.time_limit = 10000; // 10s
     opt.use_open_table = false;
-    auto result = SearchMove(board, player, opt);
+    auto result = SearchMove(board, opt);
 
     output << "  {0x" << hex << board->Hash() << ", " << result.move_count <<  ", " << "{";
     for (int i = 0; i < result.move_count; i++) {
@@ -50,9 +50,9 @@ struct OpeningGenerator {
     uint8_t moves[9*9];
     int count = board->ListMoves(moves, -1);
     for (int i = 0; i < count; i++) {
-      board->tick(moves[i], player);
-      RecursiveGenTable(board, 3-player, depth-1);
-      board->untick(moves[i], player);
+      auto info = board->tick(moves[i]);
+      RecursiveGenTable(board, depth-1);
+      board->untick(moves[i], info);
     }
   }
 };
@@ -97,7 +97,7 @@ void DumpOpeningTable() {
 void GenOpeningTable() {
   Board board;
   OpeningGenerator generator;
-  generator.RecursiveGenTable(&board, 1, 4);
+  generator.RecursiveGenTable(&board, 4);
 }
 
 void MirrorItem(TableItem* item) {

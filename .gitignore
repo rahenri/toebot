@@ -2,7 +2,7 @@
 *.o
 toebot
 toebot-v*
-toebot.tar.gz
+toebot.zip
 .d
 __pycache__
 history*
@@ -12,3 +12,4 @@ toebot-*
 *.in
 *.out
 *stderr
+tee-output-*

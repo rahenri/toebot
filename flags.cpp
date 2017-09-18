@@ -18,4 +18,4 @@ const bool* EnableOpeningTable = NewBoolFlag("enable-opening-table", true);
 const int* MinTimeLimit = NewIntFlag("min-time-limit", 0);
 const int* DefaultTimeLimit = NewIntFlag("default-time-limit", 800);
 
-const int *HashTableSize = NewIntFlag("hash-size", 50000017);
+const int *HashTableSize = NewIntFlag("hash-size", 13900011);
