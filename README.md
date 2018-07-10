@@ -1,8 +1,13 @@
 # Toebot
 
-Toebot is an AI for palying ultimate tic tac toe game in the theaigames.com competition.
+Toebot is an AI for palying ultimate tic tac toe game in the [theaigames.com
+competition](http://theaigames.com/competitions/ultimate-tic-tac-toe). This bot
+won first place using a mix of traditional mini max search and reinforcement
+learning.
 
-# Progress
+## Progress
+
+Varios notes about the progress of the bot development. Not necessarily very useful.
 
 - v35
 
